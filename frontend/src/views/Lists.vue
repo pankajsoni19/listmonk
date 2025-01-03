@@ -139,6 +139,17 @@
               <b-icon icon="trash-can-outline" size="is-small" />
             </b-tooltip>
           </a>
+
+          <a v-if="$can('lists:manage')" href="#" @click.prevent="$utils.prompt($t('globals.buttons.clone'),
+            {
+              placeholder: $t('globals.fields.name'),
+              value: $t('campaigns.copyOf', { name: props.row.name }),
+            },
+            (name) => cloneList(name, props.row))" data-cy="btn-clone" :aria-label="$t('globals.buttons.clone')">
+            <b-tooltip :label="$t('globals.buttons.clone')" type="is-dark">
+              <b-icon icon="file-multiple-outline" size="is-small" />
+            </b-tooltip>
+          </a>
         </div>
       </b-table-column>
 
@@ -233,6 +244,23 @@ export default Vue.extend({
         delete out.confirmed;
       }
       return out;
+    },
+
+    cloneList(name, l) {
+      const payload = {
+        name,
+        type: l.type,
+        tags: l.tags,
+        optin: l.optin,
+        description: l.description,
+        parentId: l.id,
+      };
+
+      this.$api.createList(payload).then((data) => {
+        this.getLists();
+        this.$parent.close();
+        this.$utils.toast(this.$t('globals.messages.created', { name: data.name }));
+      });
     },
 
     getLists() {

@@ -2272,6 +2272,8 @@ components:
               type: string
             campaigns.views:
               type: string
+            campaigns.runType:
+              type: string
             campaigns.slidingWindow:
               type: string
             campaigns.slidingWindowDuration:

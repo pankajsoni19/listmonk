@@ -7,6 +7,9 @@
             <b-field :label="$t('globals.buttons.enabled')">
               <b-switch v-model="item.enabled" name="enabled" :native-value="true" data-cy="btn-enable-smtp" />
             </b-field>
+            <b-field :label="$t('templates.default')">
+              <b-switch v-model="item.default" name="default" :native-value="true" data-cy="btn-default-smtp" />
+            </b-field>
             <b-field v-if="form.smtp.length > 1">
               <a @click.prevent="$utils.confirm(null, () => removeSMTP(n))" href="#" data-cy="btn-delete-smtp">
                 <b-icon icon="trash-can-outline" />
@@ -16,6 +19,13 @@
           </div><!-- first column -->
 
           <div class="column" :class="{ disabled: !item.enabled }">
+            <div class="columns">
+              <div class="column is-8">
+                <b-field :label="$t('globals.fields.name')" label-position="on-border">
+                  <b-input v-model="item.name" name="name" placeholder="default" :maxlength="200" />
+                </b-field>
+              </div>
+            </div>
             <div class="columns">
               <div class="column is-8">
                 <b-field :label="$t('settings.mailserver.host')" label-position="on-border"

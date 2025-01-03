@@ -81,6 +81,13 @@ func (s *store) GetCampaign(campID int) (*models.Campaign, error) {
 	return out, err
 }
 
+// GetCampaignsForList fetches campaigns for associated list
+func (s *store) GetCampaignsForLists(listIds []int, runType string) ([]*models.Campaign, error) {
+	var out []*models.Campaign
+	err := s.queries.GetCampaignsForLists.Get(out, listIds, runType)
+	return out, err
+}
+
 // UpdateCampaignStatus updates a campaign's status.
 func (s *store) UpdateCampaignStatus(campID int, status string) error {
 	_, err := s.queries.UpdateCampaignStatus.Exec(campID, status)

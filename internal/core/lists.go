@@ -140,6 +140,16 @@ func (c *Core) CreateList(l models.List) (models.List, error) {
 	return c.GetList(newID, "")
 }
 
+func (c *Core) CopyListSubscribers(parentId int, childId int) error {
+	_, err := c.q.CopyListSubscribers.Exec(parentId, childId)
+
+	if err != nil {
+		c.log.Printf("error creating list: %v", err)
+	}
+
+	return err
+}
+
 // UpdateList updates a given list.
 func (c *Core) UpdateList(id int, l models.List) (models.List, error) {
 	res, err := c.q.UpdateList.Exec(id, l.Name, l.Type, l.Optin, pq.StringArray(normalizeTags(l.Tags)), l.Description)

@@ -353,6 +353,8 @@ type Campaign struct {
 	// Pseudofield for getting the total number of subscribers
 	// in searches and queries.
 	Total int `db:"total" json:"-"`
+
+	RunType string `db:"run_type" json:"run_type"`
 }
 
 // CampaignMeta contains fields tracking a campaign's progress.

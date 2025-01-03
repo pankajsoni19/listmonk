@@ -21,6 +21,7 @@ type pipe struct {
 	lastID                atomic.Uint64
 	errors                atomic.Uint64
 	stopped               atomic.Bool
+	flagSubQueued         atomic.Bool
 	withErrors            atomic.Bool
 	m                     *Manager
 }
@@ -179,6 +180,26 @@ func (p *pipe) pauseFor(wait time.Duration) {
 	}
 }
 
+func (p *pipe) waitForEvent() bool {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if p.stopped.Load() {
+				return false
+			}
+
+			if p.flagSubQueued.Load() {
+				p.flagSubQueued.Store(false)
+				p.m.log.Printf("campaign: %s, got event", p.camp.Name)
+				return true
+			}
+		}
+	}
+}
+
 func (p *pipe) OnError() {
 	if p.m.cfg.MaxSendErrors < 1 {
 		return
@@ -253,9 +274,15 @@ func (p *pipe) cleanup() {
 		return
 	}
 
+	if c.RunType != "list" {
+		// ignore stop/cancel for list
+		return
+	}
+
 	// If a running campaign has exhausted subscribers, it's finished.
 	if c.Status == models.CampaignStatusRunning {
 		c.Status = models.CampaignStatusFinished
+
 		if err := p.m.store.UpdateCampaignStatus(p.camp.ID, models.CampaignStatusFinished); err != nil {
 			p.m.log.Printf("error finishing campaign (%s): %v", p.camp.Name, err)
 		} else {

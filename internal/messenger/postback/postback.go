@@ -93,6 +93,10 @@ func (p *Postback) Name() string {
 	return p.o.Name
 }
 
+func (p *Postback) IsDefault() bool {
+	return false
+}
+
 // Push pushes a message to the server.
 func (p *Postback) Push(m models.Message) error {
 	pb := postback{

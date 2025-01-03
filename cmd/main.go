@@ -30,32 +30,29 @@ import (
 	"github.com/knadh/stuffbin"
 )
 
-const (
-	emailMsgr = "email"
-)
-
 // App contains the "global" components that are
 // passed around, especially through HTTP handlers.
 type App struct {
-	core       *core.Core
-	fs         stuffbin.FileSystem
-	db         *sqlx.DB
-	queries    *models.Queries
-	constants  *constants
-	manager    *manager.Manager
-	importer   *subimporter.Importer
-	messengers map[string]manager.Messenger
-	auth       *auth.Auth
-	media      media.Store
-	i18n       *i18n.I18n
-	bounce     *bounce.Manager
-	paginator  *paginator.Paginator
-	captcha    *captcha.Captcha
-	events     *events.Events
-	notifTpls  *notifTpls
-	about      about
-	log        *log.Logger
-	bufLog     *buflog.BufLog
+	core             *core.Core
+	fs               stuffbin.FileSystem
+	db               *sqlx.DB
+	queries          *models.Queries
+	constants        *constants
+	manager          *manager.Manager
+	importer         *subimporter.Importer
+	defaultMessenger manager.Messenger
+	messengers       map[string]manager.Messenger
+	auth             *auth.Auth
+	media            media.Store
+	i18n             *i18n.I18n
+	bounce           *bounce.Manager
+	paginator        *paginator.Paginator
+	captcha          *captcha.Captcha
+	events           *events.Events
+	notifTpls        *notifTpls
+	about            about
+	log              *log.Logger
+	bufLog           *buflog.BufLog
 
 	// Channel for passing reload signals.
 	chReload chan os.Signal
@@ -231,10 +228,22 @@ func main() {
 	}
 
 	// Initialize the default SMTP (`email`) messenger.
-	app.messengers[emailMsgr] = initSMTPMessenger(app.manager)
+	for _, m := range initSMTPMessengers() {
+		app.messengers[m.Name()] = m
+		if m.IsDefault() {
+			app.defaultMessenger = m
+		}
+	}
+
+	if app.defaultMessenger == nil {
+		for _, v := range app.messengers {
+			app.defaultMessenger = v
+			break
+		}
+	}
 
 	// Initialize any additional postback messengers.
-	for _, m := range initPostbackMessengers(app.manager) {
+	for _, m := range initPostbackMessengers() {
 		app.messengers[m.Name()] = m
 	}
 

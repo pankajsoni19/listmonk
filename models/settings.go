@@ -60,6 +60,7 @@ type Settings struct {
 
 	SMTP []struct {
 		UUID          string              `json:"uuid"`
+		Name          string              `json:"name"`
 		Enabled       bool                `json:"enabled"`
 		Host          string              `json:"host"`
 		HelloHostname string              `json:"hello_hostname"`
@@ -74,6 +75,7 @@ type Settings struct {
 		WaitTimeout   string              `json:"wait_timeout"`
 		TLSType       string              `json:"tls_type"`
 		TLSSkipVerify bool                `json:"tls_skip_verify"`
+		Default       bool                `json:"default"`
 	} `json:"smtp"`
 
 	Messengers []struct {

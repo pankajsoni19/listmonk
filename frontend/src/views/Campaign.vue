@@ -101,6 +101,21 @@
                 </b-field>
                 <hr />
 
+                <div class="columns">
+                  <div class="column is-4">
+                    <b-field :label="$t('campaigns.runType')" label-position="on-border">
+                      <b-select v-model="form.runType" name="run_type" :disabled="!canEdit">
+                        <option value="list">
+                          List
+                        </option>
+                        <option value="event:sub">
+                          Event Subcription
+                        </option>
+                      </b-select>
+                    </b-field>
+                  </div>
+                </div>
+
                 <!-- sliding window -->
                 <div class="columns">
                     <div class="column is-6">
@@ -539,6 +554,7 @@ export default Vue.extend({
         sliding_window: this.form.slidingWindow,
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
+        run_type: this.form.runType || 'list',
         // body: this.form.body,
       };
 
@@ -572,6 +588,7 @@ export default Vue.extend({
         sliding_window: this.form.slidingWindow,
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
+        run_type: this.form.runType || 'list',
       };
 
       let typMsg = 'globals.messages.updated';

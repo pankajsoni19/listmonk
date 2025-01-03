@@ -510,12 +510,12 @@ counts AS (
 camp AS (
     INSERT INTO campaigns (uuid, type, name, subject, from_email, body, altbody, content_type, send_at, headers, 
     tags, messenger, template_id, to_send, max_subscriber_id, archive, archive_slug, archive_template_id, archive_meta,
-    sliding_window, sliding_window_rate, sliding_window_duration)
+    sliding_window, sliding_window_rate, sliding_window_duration, run_type)
         SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
             (SELECT id FROM tpl), (SELECT to_send FROM counts),
             (SELECT max_sub_id FROM counts), $15, $16,
             (CASE WHEN $17 = 0 THEN (SELECT id FROM tpl) ELSE $17 END), $18,
-            $20, $21, $22
+            $20, $21, $22, $23
         RETURNING id
 ),
 med AS (
@@ -568,6 +568,22 @@ SELECT campaigns.*,
             WHEN $3 != '' THEN campaigns.archive_slug = $3
             ELSE uuid = $2
           END;
+
+-- name: get-campaigns-for-lists
+SELECT campaigns.*,
+    COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1)) AS template_body
+    FROM campaigns
+    INNER JOIN campaign_lists ON campaign_lists.campaign_id = campaigns.id
+    LEFT JOIN templates ON templates.id = campaigns.template_id
+    WHERE 
+            campaign_lists.list_id = ANY($1::INT[])
+        AND campaigns.run_type = $2
+
+-- name: copy-list-subscribers
+INSERT INTO subscriber_lists (subscriber_id, list_id, meta, status)
+SELECT subscriber_id, $2, meta, status
+FROM subscriber_lists
+WHERE list_id = $1
 
 -- name: get-archived-campaigns
 SELECT COUNT(*) OVER () AS total, campaigns.*,
@@ -751,7 +767,7 @@ SELECT campaigns.id AS campaign_id, campaigns.type as campaign_type, last_subscr
     FROM campaigns
     LEFT JOIN campaign_lists ON (campaign_lists.campaign_id = campaigns.id)
     LEFT JOIN lists ON (lists.id = campaign_lists.list_id)
-    WHERE campaigns.id = $1 AND status='running';
+    WHERE campaigns.id = $1 AND status='running'
 
 -- name: next-campaign-subscribers
 -- Returns a batch of subscribers in a given campaign starting from the last checkpoint
@@ -849,6 +865,7 @@ WITH camp AS (
         sliding_window=$20,
         sliding_window_rate=$21,
         sliding_window_duration=$22,
+        run_type=$23,
         updated_at=NOW()
     WHERE id = $1 RETURNING id
 ),

@@ -197,9 +197,7 @@ func validateTxMessage(m models.TxMessage, app *App) (models.TxMessage, error) {
 		m.FromEmail = app.constants.FromEmail
 	}
 
-	if m.Messenger == "" {
-		m.Messenger = emailMsgr
-	} else if !app.manager.HasMessenger(m.Messenger) {
+	if !app.manager.HasMessenger(m.Messenger) {
 		return m, echo.NewHTTPError(http.StatusBadRequest, app.i18n.Ts("campaigns.fieldInvalidMessenger", "name", m.Messenger))
 	}
 

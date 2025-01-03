@@ -161,8 +161,7 @@ func handleUpdateSettings(c echo.Context) error {
 	}
 
 	// Validate and sanitize postback Messenger names. Duplicates are disallowed
-	// and "email" is a reserved name.
-	names := map[string]bool{emailMsgr: true}
+	names := map[string]bool{}
 
 	for i, m := range set.Messengers {
 		// UUID to keep track of password changes similar to the SMTP logic above.

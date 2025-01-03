@@ -99,6 +99,7 @@
     "campaigns.timestamps": "Timestamps",
     "campaigns.trackLink": "Track link",
     "campaigns.views": "Views",
+    "campaigns.runType": "Run Type",
     "dashboard.campaignViews": "Campaign views",
     "dashboard.linkClicks": "Link clicks",
     "dashboard.messagesSent": "Messages sent",
