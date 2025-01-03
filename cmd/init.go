@@ -545,19 +545,17 @@ func initImporter(q *models.Queries, db *sqlx.DB, core *core.Core, app *App) *su
 }
 
 // initSMTPMessenger initializes the SMTP messenger.
-func initSMTPMessenger(m *manager.Manager) manager.Messenger {
-	var (
-		mapKeys = ko.MapKeys("smtp")
-		servers = make([]email.Server, 0, len(mapKeys))
-	)
+func initSMTPMessengers() []manager.Messenger {
 
-	items := ko.Slices("smtp")
-	if len(items) == 0 {
+	smtps := ko.Slices("smtp")
+
+	if len(smtps) == 0 {
 		lo.Fatalf("no SMTP servers found in config")
 	}
 
-	// Load the config for multiple SMTP servers.
-	for _, item := range items {
+	var out []manager.Messenger
+
+	for _, item := range smtps {
 		if !item.Bool("enabled") {
 			continue
 		}
@@ -568,26 +566,23 @@ func initSMTPMessenger(m *manager.Manager) manager.Messenger {
 			lo.Fatalf("error reading SMTP config: %v", err)
 		}
 
-		servers = append(servers, s)
-		lo.Printf("loaded email (SMTP) messenger: %s@%s",
-			item.String("username"), item.String("host"))
-	}
-	if len(servers) == 0 {
-		lo.Fatalf("no SMTP servers enabled in settings")
+		msgr, err := email.New(s)
+		if err != nil {
+			lo.Fatalf("error loading e-mail messenger: %v", err)
+		} else {
+			out = append(out, msgr)
+
+			lo.Printf("loaded email (SMTP) messenger: %s@%s",
+				item.String("username"), item.String("host"))
+		}
 	}
 
-	// Initialize the e-mail messenger with multiple SMTP servers.
-	msgr, err := email.New(servers...)
-	if err != nil {
-		lo.Fatalf("error loading e-mail messenger: %v", err)
-	}
-
-	return msgr
+	return out
 }
 
 // initPostbackMessengers initializes and returns all the enabled
 // HTTP postback messenger backends.
-func initPostbackMessengers(m *manager.Manager) []manager.Messenger {
+func initPostbackMessengers() []manager.Messenger {
 	items := ko.Slices("messengers")
 	if len(items) == 0 {
 		return nil
@@ -613,6 +608,7 @@ func initPostbackMessengers(m *manager.Manager) []manager.Messenger {
 		if err != nil {
 			lo.Fatalf("error initializing Postback messenger %s: %v", name, err)
 		}
+
 		out = append(out, p)
 
 		lo.Printf("loaded Postback messenger: %s", name)

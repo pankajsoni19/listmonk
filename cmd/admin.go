@@ -48,14 +48,11 @@ func handleGetServerConfig(c echo.Context) error {
 	// Sort messenger names with `email` always as the first item.
 	var names []string
 	for name := range app.messengers {
-		if name == emailMsgr {
-			continue
-		}
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
-	out.Messengers = append(out.Messengers, emailMsgr)
-	out.Messengers = append(out.Messengers, names...)
+	out.Messengers = names
 
 	app.Lock()
 	out.NeedsRestart = app.needsRestart

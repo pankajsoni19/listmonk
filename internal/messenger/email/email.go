@@ -3,7 +3,6 @@ package email
 import (
 	"crypto/tls"
 	"fmt"
-	"math/rand"
 	"net/smtp"
 	"net/textproto"
 	"strings"
@@ -13,7 +12,6 @@ import (
 )
 
 const (
-	emName        = "email"
 	hdrReturnPath = "Return-Path"
 	hdrBcc        = "Bcc"
 	hdrCc         = "Cc"
@@ -21,12 +19,14 @@ const (
 
 // Server represents an SMTP server's credentials.
 type Server struct {
+	Name          string            `json:"name"`
 	Username      string            `json:"username"`
 	Password      string            `json:"password"`
 	AuthProtocol  string            `json:"auth_protocol"`
 	TLSType       string            `json:"tls_type"`
 	TLSSkipVerify bool              `json:"tls_skip_verify"`
 	EmailHeaders  map[string]string `json:"email_headers"`
+	Default       bool              `json:"default"`
 
 	// Rest of the options are embedded directly from the smtppool lib.
 	// The JSON tag is for config unmarshal to work.
@@ -37,53 +37,48 @@ type Server struct {
 
 // Emailer is the SMTP e-mail messenger.
 type Emailer struct {
-	servers []*Server
+	server *Server
 }
 
 // New returns an SMTP e-mail Messenger backend with the given SMTP servers.
-func New(servers ...Server) (*Emailer, error) {
-	e := &Emailer{
-		servers: make([]*Server, 0, len(servers)),
+func New(s Server) (*Emailer, error) {
+
+	switch s.AuthProtocol {
+	case "cram":
+		s.Opt.Auth = smtp.CRAMMD5Auth(s.Username, s.Password)
+	case "plain":
+		s.Opt.Auth = smtp.PlainAuth("", s.Username, s.Password, s.Host)
+	case "login":
+		s.Opt.Auth = &smtppool.LoginAuth{Username: s.Username, Password: s.Password}
+	case "", "none":
+	default:
+		return nil, fmt.Errorf("unknown SMTP auth type '%s'", s.AuthProtocol)
 	}
 
-	for _, srv := range servers {
-		s := srv
-		var auth smtp.Auth
-		switch s.AuthProtocol {
-		case "cram":
-			auth = smtp.CRAMMD5Auth(s.Username, s.Password)
-		case "plain":
-			auth = smtp.PlainAuth("", s.Username, s.Password, s.Host)
-		case "login":
-			auth = &smtppool.LoginAuth{Username: s.Username, Password: s.Password}
-		case "", "none":
-		default:
-			return nil, fmt.Errorf("unknown SMTP auth type '%s'", s.AuthProtocol)
-		}
-		s.Opt.Auth = auth
-
-		// TLS config.
-		if s.TLSType != "none" {
-			s.TLSConfig = &tls.Config{}
-			if s.TLSSkipVerify {
-				s.TLSConfig.InsecureSkipVerify = s.TLSSkipVerify
-			} else {
-				s.TLSConfig.ServerName = s.Host
-			}
-
-			// SSL/TLS, not STARTTLS.
-			if s.TLSType == "TLS" {
-				s.Opt.SSL = true
-			}
+	// TLS config.
+	if s.TLSType != "none" {
+		s.TLSConfig = &tls.Config{}
+		if s.TLSSkipVerify {
+			s.TLSConfig.InsecureSkipVerify = s.TLSSkipVerify
+		} else {
+			s.TLSConfig.ServerName = s.Host
 		}
 
-		pool, err := smtppool.New(s.Opt)
-		if err != nil {
-			return nil, err
+		// SSL/TLS, not STARTTLS.
+		if s.TLSType == "TLS" {
+			s.Opt.SSL = true
 		}
+	}
 
-		s.pool = pool
-		e.servers = append(e.servers, &s)
+	pool, err := smtppool.New(s.Opt)
+	if err != nil {
+		return nil, err
+	}
+
+	s.pool = pool
+
+	e := &Emailer{
+		server: &s,
 	}
 
 	return e, nil
@@ -91,22 +86,18 @@ func New(servers ...Server) (*Emailer, error) {
 
 // Name returns the Server's name.
 func (e *Emailer) Name() string {
-	return emName
+	return e.server.Name
+}
+
+func (e *Emailer) IsDefault() bool {
+	return e.server.Default
 }
 
 // Push pushes a message to the server.
 func (e *Emailer) Push(m models.Message) error {
 	// If there are more than one SMTP servers, send to a random
 	// one from the list.
-	var (
-		ln  = len(e.servers)
-		srv *Server
-	)
-	if ln > 1 {
-		srv = e.servers[rand.Intn(ln)]
-	} else {
-		srv = e.servers[0]
-	}
+	var srv = e.server
 
 	// Are there attachments?
 	var files []smtppool.Attachment
@@ -185,8 +176,7 @@ func (e *Emailer) Flush() error {
 
 // Close closes the SMTP pools.
 func (e *Emailer) Close() error {
-	for _, s := range e.servers {
-		s.pool.Close()
-	}
+	e.server.pool.Close()
+
 	return nil
 }

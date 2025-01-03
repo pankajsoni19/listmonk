@@ -50,6 +50,7 @@ type Messenger interface {
 	Push(models.Message) error
 	Flush() error
 	Close() error
+	IsDefault() bool
 }
 
 // CampStats contains campaign stats like per minute send rate.

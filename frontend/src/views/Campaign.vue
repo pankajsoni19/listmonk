@@ -588,7 +588,7 @@ export default Vue.extend({
         sliding_window: this.form.slidingWindow,
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
-        run_type: this.form.runType || 'list'
+        run_type: this.form.runType || 'list',
       };
 
       let typMsg = 'globals.messages.updated';

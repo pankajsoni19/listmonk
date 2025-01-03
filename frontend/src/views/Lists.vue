@@ -248,18 +248,17 @@ export default Vue.extend({
 
     cloneList(name, l) {
       const payload = {
-        name: name,
+        name,
         type: l.type,
         tags: l.tags,
         optin: l.optin,
         description: l.description,
         parentId: l.id,
-      }
+      };
 
       this.$api.createList(payload).then((data) => {
         this.getLists();
         this.$parent.close();
-  
         this.$utils.toast(this.$t('globals.messages.created', { name: data.name }));
       });
     },
