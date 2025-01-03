@@ -445,7 +445,9 @@ func (m *Manager) scanCampaigns(tick time.Duration) {
 	}
 }
 
-func (m *Manager) QueueForSubAndList(subIDs, listIDs []int, runType string) {
+func (m *Manager) QueueForSubAndList(subIDs, listIDs []int) {
+	runType := "event:sub"
+
 	campaigns, e := m.store.GetCampaignsForLists(listIDs, runType)
 	if e != nil {
 		return
