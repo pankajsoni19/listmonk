@@ -36,7 +36,7 @@ type Store interface {
 	GetAttachment(mediaID int) (models.Attachment, error)
 	UpdateCampaignStatus(campID int, status string) error
 	UpdateLastSubscriberId(campId int, pending int) error
-	GetCampaignsForList(listId int, runType string) ([]*models.Campaign, error)
+	GetCampaignsForLists(listId []int, runType string) ([]*models.Campaign, error)
 	UpdateCampaignCounts(campID int, toSend int, sent int, lastSubID int) error
 	CreateLink(url string) (string, error)
 	BlocklistSubscriber(id int64) error
@@ -279,6 +279,7 @@ func (m *Manager) processNextSubResult(
 	channel chan *NextSubResult,
 ) {
 	result := <-channel
+	close(channel)
 
 	m.log.Println("next subresult", result.Has, result.Error, p.stopped.Load())
 
@@ -287,19 +288,40 @@ func (m *Manager) processNextSubResult(
 		return
 	}
 
-	if result.Has && !p.stopped.Load() {
-		// There are more subscribers to fetch. Queue again.
-		select {
-		case m.nextPipes <- p:
-		default:
-		}
+	if p.stopped.Load() {
+		// stopped
+		m.markDone(p)
+	} else if result.Has {
+		// more items
+		m.queueNext(p)
+	} else if p.camp.RunType == "list" {
+		// all items processed for list type
+		m.markDone(p)
 	} else {
-		m.log.Println("next subresult->done")
+		hasEvent := p.waitForEvent()
 
-		// Mark the pseudo counter that's added in makePipe() that is used
-		// to force a wait on a pipe.
-		p.wg.Done()
+		if hasEvent {
+			m.queueNext(p)
+		} else {
+			m.markDone(p)
+		}
 	}
+}
+
+func (m *Manager) queueNext(p *pipe) {
+	// There are more subscribers to fetch. Queue again.
+	select {
+	case m.nextPipes <- p:
+	default:
+	}
+}
+
+func (m *Manager) markDone(p *pipe) {
+	m.log.Println("next subresult->done")
+
+	// Mark the pseudo counter that's added in makePipe() that is used
+	// to force a wait on a pipe.
+	p.wg.Done()
 }
 
 // CacheTpl caches a template for ad-hoc use. This is currently only used by tx templates.
@@ -423,13 +445,18 @@ func (m *Manager) scanCampaigns(tick time.Duration) {
 	}
 }
 
-func (m *Manager) QueueForSubAndList(listIds []int, subIds []int, runType string) {
-	for _, lid := range listIds {
-		if campaigns, e := m.store.GetCampaignsForList(lid, runType); e == nil {
-			for _, c := range campaigns {
-				//TODO: send
-				fmt.Print(c)
-			}
+func (m *Manager) QueueForSubAndList(subIDs, listIDs []int, runType string) {
+	campaigns, e := m.store.GetCampaignsForLists(listIDs, runType)
+	if e != nil {
+		return
+	}
+
+	m.pipesMut.Lock()
+	defer m.pipesMut.Unlock()
+
+	for _, c := range campaigns {
+		if pipe, ok := m.pipes[c.ID]; ok {
+			pipe.flagSubQueued.Store(true)
 		}
 	}
 }

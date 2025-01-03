@@ -569,14 +569,14 @@ SELECT campaigns.*,
             ELSE uuid = $2
           END;
 
--- name: get-campaign-for-list
+-- name: get-campaigns-for-lists
 SELECT campaigns.*,
     COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1)) AS template_body
     FROM campaigns
     INNER JOIN campaign_lists ON campaign_lists.campaign_id = campaigns.id
     LEFT JOIN templates ON templates.id = campaigns.template_id
     WHERE 
-            campaign_lists.list_id = $1
+            campaign_lists.list_id = ANY($1::INT[])
         AND campaigns.run_type = $2
 
 -- name: copy-list-subscribers
@@ -768,7 +768,6 @@ SELECT campaigns.id AS campaign_id, campaigns.type as campaign_type, last_subscr
     LEFT JOIN campaign_lists ON (campaign_lists.campaign_id = campaigns.id)
     LEFT JOIN lists ON (lists.id = campaign_lists.list_id)
     WHERE campaigns.id = $1 AND status='running'
-    AND campaigns.run_type = 'list'
 
 -- name: next-campaign-subscribers
 -- Returns a batch of subscribers in a given campaign starting from the last checkpoint

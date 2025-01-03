@@ -21,6 +21,7 @@ type pipe struct {
 	lastID                atomic.Uint64
 	errors                atomic.Uint64
 	stopped               atomic.Bool
+	flagSubQueued         atomic.Bool
 	withErrors            atomic.Bool
 	m                     *Manager
 }
@@ -174,6 +175,26 @@ func (p *pipe) pauseFor(wait time.Duration) {
 
 			if time.Since(startTime) > wait {
 				return
+			}
+		}
+	}
+}
+
+func (p *pipe) waitForEvent() bool {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if p.stopped.Load() {
+				return false
+			}
+
+			if p.flagSubQueued.Load() {
+				p.flagSubQueued.Store(false)
+				p.m.log.Printf("campaign: %s, got event", p.camp.Name)
+				return true
 			}
 		}
 	}

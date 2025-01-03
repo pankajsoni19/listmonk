@@ -82,9 +82,9 @@ func (s *store) GetCampaign(campID int) (*models.Campaign, error) {
 }
 
 // GetCampaignsForList fetches campaigns for associated list
-func (s *store) GetCampaignsForList(listId int, runType string) ([]*models.Campaign, error) {
+func (s *store) GetCampaignsForLists(listIds []int, runType string) ([]*models.Campaign, error) {
 	var out []*models.Campaign
-	err := s.queries.GetCampaignsForList.Get(out, listId, runType)
+	err := s.queries.GetCampaignsForLists.Get(out, listIds, runType)
 	return out, err
 }
 

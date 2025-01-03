@@ -235,6 +235,13 @@ func main() {
 		}
 	}
 
+	if app.defaultMessenger == nil {
+		for _, v := range app.messengers {
+			app.defaultMessenger = v
+			break
+		}
+	}
+
 	// Initialize any additional postback messengers.
 	for _, m := range initPostbackMessengers() {
 		app.messengers[m.Name()] = m
