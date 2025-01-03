@@ -376,6 +376,9 @@ func handleManageSubscriberLists(c echo.Context) error {
 	switch req.Action {
 	case "add":
 		err = app.core.AddSubscriptions(subIDs, listIDs, req.Status)
+		if err == nil {
+			app.manager.QueueForSubAndList(listIDs, subIDs, "event:sub")
+		}
 	case "remove":
 		err = app.core.DeleteSubscriptions(subIDs, listIDs)
 	case "unsubscribe":

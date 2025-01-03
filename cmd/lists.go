@@ -87,11 +87,18 @@ func handleGetList(c echo.Context) error {
 	return c.JSON(http.StatusOK, okResp{out})
 }
 
+// listsReq is a wrapper over the List model for receiving
+// list creation and update data from APIs.
+type listsReq struct {
+	models.List
+	ParentId int `json:"parentId"`
+}
+
 // handleCreateList handles list creation.
 func handleCreateList(c echo.Context) error {
 	var (
 		app = c.Get("app").(*App)
-		l   = models.List{}
+		l   listsReq
 	)
 
 	if err := c.Bind(&l); err != nil {
@@ -103,9 +110,13 @@ func handleCreateList(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, app.i18n.T("lists.invalidName"))
 	}
 
-	out, err := app.core.CreateList(l)
+	out, err := app.core.CreateList(l.List)
 	if err != nil {
 		return err
+	}
+
+	if l.ParentId > 0 {
+		app.core.CopyListSubscribers(l.ParentId, out.ID)
 	}
 
 	return c.JSON(http.StatusOK, okResp{out})

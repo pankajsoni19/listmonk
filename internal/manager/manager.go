@@ -36,6 +36,7 @@ type Store interface {
 	GetAttachment(mediaID int) (models.Attachment, error)
 	UpdateCampaignStatus(campID int, status string) error
 	UpdateLastSubscriberId(campId int, pending int) error
+	GetCampaignsForList(listId int, runType string) ([]*models.Campaign, error)
 	UpdateCampaignCounts(campID int, toSend int, sent int, lastSubID int) error
 	CreateLink(url string) (string, error)
 	BlocklistSubscriber(id int64) error
@@ -415,23 +416,39 @@ func (m *Manager) scanCampaigns(tick time.Duration) {
 			}
 
 			for _, c := range campaigns {
-				// Create a new pipe that'll handle this campaign's states.
-				p, err := m.newPipe(c)
-				if err != nil {
-					m.log.Printf("error processing campaign (%s): %v", c.Name, err)
-					continue
-				}
-				m.log.Printf("start processing campaign (%s)", c.Name)
-
-				// If subscriber processing is busy, move on. Blocking and waiting
-				// can end up in a race condition where the waiting campaign's
-				// state in the data source has changed.
-				select {
-				case m.nextPipes <- p:
-				default:
-				}
+				m.start(c)
 			}
 		}
+	}
+}
+
+func (m *Manager) QueueForSubAndList(listIds []int, subIds []int, runType string) {
+	for _, lid := range listIds {
+		if campaigns, e := m.store.GetCampaignsForList(lid, runType); e == nil {
+			for _, c := range campaigns {
+				//TODO: send
+				fmt.Print(c)
+			}
+		}
+	}
+}
+
+func (m *Manager) start(c *models.Campaign) {
+	// Create a new pipe that'll handle this campaign's states.
+	p, err := m.newPipe(c)
+	if err != nil {
+		m.log.Printf("error processing campaign (%s): %v", c.Name, err)
+		return
+	}
+
+	m.log.Printf("start processing campaign (%s)", c.Name)
+
+	// If subscriber processing is busy, move on. Blocking and waiting
+	// can end up in a race condition where the waiting campaign's
+	// state in the data source has changed.
+	select {
+	case m.nextPipes <- p:
+	default:
 	}
 }
 
