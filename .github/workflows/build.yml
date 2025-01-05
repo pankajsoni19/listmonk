@@ -24,7 +24,7 @@ jobs:
           go-version: "1.22"
 
       - name: Install deps
-        run: apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
+        run: sudo apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
       
       - name: Build
         run: |
