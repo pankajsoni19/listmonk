@@ -365,7 +365,7 @@ CREATE MATERIALIZED VIEW mat_dashboard_counts AS
                 'total', (SELECT SUM(num) FROM subs),
                 'blocklisted', (SELECT num FROM subs WHERE status='blocklisted'),
                 'orphans', (
-                    SELECT COUNT(id) FROM subscribers
+                    SELECT COUNT(subscribers.id) FROM subscribers
                     LEFT JOIN subscriber_lists ON (subscribers.id = subscriber_lists.subscriber_id)
                     WHERE subscriber_lists.subscriber_id IS NULL
                 )
