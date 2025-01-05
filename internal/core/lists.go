@@ -77,7 +77,7 @@ func (c *Core) GetList(id int, uuid string) (models.List, error) {
 
 	var res []models.List
 	queryStr, stmt := makeSearchQuery("", "", "", c.q.QueryLists, nil)
-	if err := c.db.Select(&res, stmt, id, uu, queryStr, "", "", pq.StringArray{}, true, nil, 0, 1); err != nil {
+	if err := c.db.Select(&res, stmt, id, uu, queryStr, "", "", pq.StringArray{}, true, nil, 0, 1, nil); err != nil {
 		c.log.Printf("error fetching lists: %v", err)
 		return models.List{}, echo.NewHTTPError(http.StatusInternalServerError,
 			c.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.lists}", "error", pqErrMsg(err)))

@@ -24,7 +24,6 @@ type runningCamp struct {
 	CampaignID       int    `db:"campaign_id"`
 	CampaignType     string `db:"campaign_type"`
 	LastSubscriberID int    `db:"last_subscriber_id"`
-	MaxSubscriberID  int    `db:"max_subscriber_id"`
 	ListID           int    `db:"list_id"`
 }
 
@@ -65,13 +64,8 @@ func (s *store) NextSubscribers(campID, limit int) ([]models.Subscriber, error) 
 	}
 
 	var out []models.Subscriber
-	err := s.queries.NextCampaignSubscribers.Select(&out, camps[0].CampaignID, camps[0].CampaignType, camps[0].LastSubscriberID, camps[0].MaxSubscriberID, pq.Array(listIDs), limit)
+	err := s.queries.NextCampaignSubscribers.Select(&out, camps[0].CampaignID, camps[0].CampaignType, camps[0].LastSubscriberID, pq.Array(listIDs), limit)
 	return out, err
-}
-
-func (s *store) UpdateLastSubscriberId(campID, remaining int) error {
-	_, err := s.queries.UpdateLastSubscriberId.Exec(campID, remaining)
-	return err
 }
 
 // GetCampaign fetches a campaign from the database.
@@ -82,9 +76,9 @@ func (s *store) GetCampaign(campID int) (*models.Campaign, error) {
 }
 
 // GetCampaignsForList fetches campaigns for associated list
-func (s *store) GetCampaignsForLists(listIds []int, runType string) ([]*models.Campaign, error) {
-	var out []*models.Campaign
-	err := s.queries.GetCampaignsForLists.Get(out, listIds, runType)
+func (s *store) GetCampaignsForListsRunType(listIds []int, runType string) ([]models.Campaign, error) {
+	var out []models.Campaign
+	err := s.queries.GetCampaignsForListsRunType.Select(&out, pq.Array(listIds), runType)
 	return out, err
 }
 

@@ -35,8 +35,7 @@ type Store interface {
 	GetCampaign(campID int) (*models.Campaign, error)
 	GetAttachment(mediaID int) (models.Attachment, error)
 	UpdateCampaignStatus(campID int, status string) error
-	UpdateLastSubscriberId(campId int, pending int) error
-	GetCampaignsForLists(listId []int, runType string) ([]*models.Campaign, error)
+	GetCampaignsForListsRunType(listId []int, runType string) ([]models.Campaign, error)
 	UpdateCampaignCounts(campID int, toSend int, sent int, lastSubID int) error
 	CreateLink(url string) (string, error)
 	BlocklistSubscriber(id int64) error
@@ -446,10 +445,9 @@ func (m *Manager) scanCampaigns(tick time.Duration) {
 }
 
 func (m *Manager) QueueForSubAndList(subIDs, listIDs []int) {
-	runType := "event:sub"
-
-	campaigns, e := m.store.GetCampaignsForLists(listIDs, runType)
+	campaigns, e := m.store.GetCampaignsForListsRunType(listIDs, "event:sub")
 	if e != nil {
+		fmt.Println(e)
 		return
 	}
 
@@ -555,10 +553,7 @@ func (m *Manager) worker() {
 				if err != nil {
 					msg.pipe.OnError()
 				} else {
-					id := uint64(msg.Subscriber.ID)
-					if id > msg.pipe.lastID.Load() {
-						msg.pipe.lastID.Store(uint64(msg.Subscriber.ID))
-					}
+					msg.pipe.lastID.Store(uint64(msg.Subscriber.Slid))
 					msg.pipe.rate.Incr(1)
 					msg.pipe.sent.Add(1)
 				}
@@ -576,18 +571,6 @@ func (m *Manager) worker() {
 			}
 		}
 	}
-}
-
-// getRunningCampaignIDs returns the IDs of campaigns currently being processed.
-func (m *Manager) getRunningCampaignIDs() []int64 {
-	// Needs to return an empty slice in case there are no campaigns.
-	m.pipesMut.RLock()
-	ids := make([]int64, 0, len(m.pipes))
-	for _, p := range m.pipes {
-		ids = append(ids, int64(p.camp.ID))
-	}
-	m.pipesMut.RUnlock()
-	return ids
 }
 
 // getCurrentCampaigns returns the IDs of campaigns currently being processed
@@ -611,14 +594,6 @@ func (m *Manager) getCurrentCampaigns() ([]int64, []int64) {
 	}
 
 	return ids, counts
-}
-
-// isCampaignProcessing checks if the campaign is being processed.
-func (m *Manager) isCampaignProcessing(id int) bool {
-	m.pipesMut.RLock()
-	_, ok := m.pipes[id]
-	m.pipesMut.RUnlock()
-	return ok
 }
 
 // trackLink register a URL and return its UUID to be used in message templates

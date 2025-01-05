@@ -379,7 +379,7 @@ func handleManageSubscriberLists(c echo.Context) error {
 	case "add":
 		err = app.core.AddSubscriptions(subIDs, listIDs, req.Status)
 		if err == nil {
-			app.manager.QueueForSubAndList(listIDs, subIDs)
+			app.manager.QueueForSubAndList(subIDs, listIDs)
 		}
 	case "remove":
 		err = app.core.DeleteSubscriptions(subIDs, listIDs)

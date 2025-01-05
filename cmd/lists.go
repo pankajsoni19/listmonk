@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -58,8 +57,6 @@ func handleGetLists(c echo.Context) error {
 
 		return c.JSON(http.StatusOK, okResp{out})
 	}
-
-	fmt.Println(names)
 
 	// Full list query.
 	res, total, err := app.core.QueryLists(query, typ, optin, names, tags, orderBy, order, getAll, permittedIDs, pg.Offset, pg.Limit)
