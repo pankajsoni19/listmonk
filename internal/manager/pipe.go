@@ -177,7 +177,7 @@ func (p *pipe) pauseFor(wait time.Duration) {
 }
 
 func (p *pipe) waitForEvent() bool {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	p.m.log.Printf("campaign: %s, will wait for events, at 1 min interval", p.camp.Name)

@@ -16,16 +16,18 @@ Visit [listmonk.app](https://listmonk.app) for more info.
 I tagged it to db migration version, and will follow that as semver.
 
 ##### Long running campaigns
-* when creating campaign choose run type as `Event Subscription`
-* Modify subscriber list memberships -> `/api/subscribers/lists`
-* Create a new subscriber -> `/api/subscribers`
+* When creating campaign choose run type as `Event Subscription`
+* Supported via
+	* Modify subscriber list memberships -> `/api/subscribers/lists`
+	* Create a new subscriber -> `/api/subscribers`
 * If no new message, worker will sleep for 1 minute before querying
 
 ##### Per Campaign smtp/messenger
 
-* In smtp config specify a name.
+* In `Settings`>`SMTP` config specify a name.
 * In create/update campaign specify same name. 
 * It will use that messenger to send outbound event.
+* Specify a `default`, if none specified picks first. It is used to send system alert emails.
 
 ##### Query list by exact name
 
@@ -33,8 +35,8 @@ I tagged it to db migration version, and will follow that as semver.
 
 ##### Per Campaign `Sliding window limit`
 
-* config added to create/update campaign UI
-* config is removed from `Settings`>`Performance`
+* Config added to create/update campaign UI
+* Config is removed from `Settings`>`Performance`. On upgrade this is copied to all campaigns.
 * Allows setting limit per campaign per endpoint.
 
 ##### Cloning of lists
