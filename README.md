@@ -60,7 +60,7 @@ Assumes we are on debian
 
 ```bash
 
-apt-get install git git-lfs
+apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
 
 cd dependencies
 curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
