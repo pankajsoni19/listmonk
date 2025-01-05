@@ -4,16 +4,9 @@ This is a forked repo from `v4.1.0` upstream. It maintains compatibility with up
 
 Visit [listmonk.app](https://listmonk.app) for more info.
 
-#### Requirements
-
-* yarn 2
-* nodejs 20
-* golang latest
-* postgres >= 12
-
 #### Changes from upstream
 
-I tagged it to db migration version, and will follow that as semver.
+I tagged it to db schema version, and will follow that as semver.
 
 ##### Long running campaigns
 * When creating campaign choose run type as `Event Subscription`
@@ -58,6 +51,29 @@ I tagged it to db migration version, and will follow that as semver.
 
 Assumes we are on debian
 
+### Via docker
+```bash
+docker pull pankaj19soni/listmonk:latest
+
+# Download the compose file to the current directory.
+# Update image name with tag created above
+curl -LO https://raw.githubusercontent.com/pankajsoni19/listmonk/master/docker-compose.yml
+
+# Run the services in the background.
+docker compose up -d
+```
+
+## Build
+
+### Requirements
+
+* yarn 2
+* nodejs 20
+* golang latest
+* postgres >= 12
+
+### Build container
+
 ```bash
 
 apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
@@ -86,19 +102,11 @@ make dist
 
 # This wraps the binary into a docker image
 docker build -t YOUR-TAG .
-
-cd ..
-
-# Download the compose file to the current directory.
-# Update image name with tag created above
-curl -LO https://raw.githubusercontent.com/pankajsoni19/listmonk/master/docker-compose.yml
-
-# Run the services in the background.
-docker compose up -d
 ```
 
-For upgrade build the docker/binary. 
+## Upgrade 
 
+* Take db backup
 * Stop previous container/binary.
 * Update compose file to point to new image or point to new binary and start
 
