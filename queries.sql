@@ -426,6 +426,7 @@ UPDATE subscriber_lists SET status='unsubscribed', updated_at=NOW()
 SELECT * FROM lists WHERE (CASE WHEN $1 = '' THEN 1=1 ELSE type=$1::list_type END)
     AND CASE
         -- Optional list IDs based on user permission.
+        WHEN CARDINALITY($5::text[]) > 0 THEN name = ANY($5::text[])
         WHEN $3 = TRUE THEN TRUE ELSE id = ANY($4::INT[])
     END
     ORDER BY CASE WHEN $2 = 'id' THEN id END, CASE WHEN $2 = 'name' THEN name END;
@@ -437,6 +438,7 @@ WITH ls AS (
         WHEN $1 > 0 THEN id = $1
         WHEN $2 != '' THEN uuid = $2::UUID
         WHEN $3 != '' THEN to_tsvector(name) @@ to_tsquery ($3)
+        WHEN CARDINALITY($11::text[]) > 0 THEN name = ANY($11::text[])
         ELSE TRUE
     END
     AND ($4 = '' OR type = $4::list_type)

@@ -274,11 +274,6 @@ func (p *pipe) cleanup() {
 		return
 	}
 
-	if c.RunType != "list" {
-		// ignore stop/cancel for list
-		return
-	}
-
 	// If a running campaign has exhausted subscribers, it's finished.
 	if c.Status == models.CampaignStatusRunning {
 		c.Status = models.CampaignStatusFinished
