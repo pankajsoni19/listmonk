@@ -242,7 +242,7 @@ INSERT INTO settings (key, value) VALUES
     ('app.enable_public_subscription_page', 'true'),
     ('app.enable_public_archive_rss_content', 'true'),
     ('app.send_optin_confirmation', 'true'),
-    ('app.check_updates', 'true'),
+    ('app.check_updates', 'false'),
     ('app.notify_emails', '["admin1@mysite.com", "admin2@mysite.com"]'),
     ('app.lang', '"en"'),
     ('privacy.individual_tracking', 'false'),
