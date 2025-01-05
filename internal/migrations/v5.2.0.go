@@ -14,6 +14,16 @@ func V5_2_0(db *sqlx.DB, fs stuffbin.FileSystem, ko *koanf.Koanf, lo *log.Logger
 
 	ALTER TABLE campaigns ADD IF NOT EXISTS run_type campaign_run_type NOT NULL DEFAULT 'list';
 
+	ALTER TABLE subscriber_lists ADD CONSTRAINT idx_uniq UNIQUE ( subscriber_id, list_id);
+
+	ALTER TABLE subscriber_lists DROP CONSTRAINT subscriber_lists_pkey;
+
+	ALTER TABLE subscriber_lists ADD COLUMN id BIGSERIAL PRIMARY KEY;
+
+	ALTER TABLE campaigns DROP max_subscriber_id;
+
+	UPDATE settings SET value='false' where key = 'app.check_updates';
+	
 	`); err != nil {
 		return err
 	}

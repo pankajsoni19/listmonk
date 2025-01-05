@@ -24,6 +24,7 @@ func handleGetLists(c echo.Context) error {
 		optin      = c.FormValue("optin")
 		order      = c.FormValue("order")
 		minimal, _ = strconv.ParseBool(c.FormValue("minimal"))
+		names      = c.QueryParams()["name"]
 
 		out models.PageResults
 	)
@@ -40,7 +41,7 @@ func handleGetLists(c echo.Context) error {
 
 	// Minimal query simply returns the list of all lists without JOIN subscriber counts. This is fast.
 	if minimal {
-		res, err := app.core.GetLists("", getAll, permittedIDs)
+		res, err := app.core.GetLists("", getAll, permittedIDs, names)
 		if err != nil {
 			return err
 		}
@@ -58,7 +59,7 @@ func handleGetLists(c echo.Context) error {
 	}
 
 	// Full list query.
-	res, total, err := app.core.QueryLists(query, typ, optin, tags, orderBy, order, getAll, permittedIDs, pg.Offset, pg.Limit)
+	res, total, err := app.core.QueryLists(query, typ, optin, names, tags, orderBy, order, getAll, permittedIDs, pg.Offset, pg.Limit)
 	if err != nil {
 		return err
 	}

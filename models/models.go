@@ -240,6 +240,8 @@ type Subscriber struct {
 	Attribs JSON           `db:"attribs" json:"attribs"`
 	Status  string         `db:"status" json:"status"`
 	Lists   types.JSONText `db:"lists" json:"lists"`
+
+	Slid int `db:"slid" json:"-"`
 }
 type subLists struct {
 	SubscriberID int            `db:"subscriber_id"`

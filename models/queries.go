@@ -58,14 +58,14 @@ type Queries struct {
 	DeleteLists         *sqlx.Stmt `query:"delete-lists"`
 	CopyListSubscribers *sqlx.Stmt `query:"copy-list-subscribers"`
 
-	CreateCampaign        *sqlx.Stmt `query:"create-campaign"`
-	QueryCampaigns        string     `query:"query-campaigns"`
-	GetCampaign           *sqlx.Stmt `query:"get-campaign"`
-	GetCampaignForPreview *sqlx.Stmt `query:"get-campaign-for-preview"`
-	GetCampaignStats      *sqlx.Stmt `query:"get-campaign-stats"`
-	GetCampaignStatus     *sqlx.Stmt `query:"get-campaign-status"`
-	GetArchivedCampaigns  *sqlx.Stmt `query:"get-archived-campaigns"`
-	GetCampaignsForLists  *sqlx.Stmt `query:"get-campaigns-for-lists"`
+	CreateCampaign              *sqlx.Stmt `query:"create-campaign"`
+	QueryCampaigns              string     `query:"query-campaigns"`
+	GetCampaign                 *sqlx.Stmt `query:"get-campaign"`
+	GetCampaignForPreview       *sqlx.Stmt `query:"get-campaign-for-preview"`
+	GetCampaignStats            *sqlx.Stmt `query:"get-campaign-stats"`
+	GetCampaignStatus           *sqlx.Stmt `query:"get-campaign-status"`
+	GetArchivedCampaigns        *sqlx.Stmt `query:"get-archived-campaigns"`
+	GetCampaignsForListsRunType *sqlx.Stmt `query:"get-campaigns-for-lists-runtype"`
 
 	// These two queries are read as strings and based on settings.individual_tracking=on/off,
 	// are interpolated and copied to view and click counts. Same query, different tables.
@@ -86,7 +86,6 @@ type Queries struct {
 	UpdateCampaignCounts     *sqlx.Stmt `query:"update-campaign-counts"`
 	UpdateCampaignArchive    *sqlx.Stmt `query:"update-campaign-archive"`
 	UpdateCampaignWindow     *sqlx.Stmt `query:"update-campaign-window"`
-	UpdateLastSubscriberId   *sqlx.Stmt `query:"update-campaign-last-sub-id"`
 	RegisterCampaignView     *sqlx.Stmt `query:"register-campaign-view"`
 	DeleteCampaign           *sqlx.Stmt `query:"delete-campaign"`
 

@@ -1,36 +1,110 @@
-<a href="https://zerodha.tech"><img src="https://zerodha.tech/static/images/github-badge.svg" align="right" /></a>
+## About
 
-[![listmonk-logo](https://user-images.githubusercontent.com/547147/231084896-835dba66-2dfe-497c-ba0f-787564c0819e.png)](https://listmonk.app)
+This is a forked repo from `v4.1.0` upstream. It maintains compatibility with upstream. It contains these additional work items. Changes are extensive, so most probably wouldnt get merged.
 
-listmonk is a standalone, self-hosted, newsletter and mailing list manager. It is fast, feature-rich, and packed into a single binary. It uses a PostgreSQL (⩾ 12) database as its data store.
+Visit [listmonk.app](https://listmonk.app) for more info.
 
-[![listmonk-dashboard](https://user-images.githubusercontent.com/547147/134939475-e0391111-f762-44cb-b056-6cb0857755e3.png)](https://listmonk.app)
+#### Requirements
 
-Visit [listmonk.app](https://listmonk.app) for more info. Check out the [**live demo**](https://demo.listmonk.app).
+* yarn 2
+* nodejs 20
+* golang latest
+* postgres >= 12
+
+#### Changes from upstream
+
+I tagged it to db migration version, and will follow that as semver.
+
+##### Long running campaigns
+* when creating campaign choose run type as `Event Subscription`
+* Modify subscriber list memberships -> `/api/subscribers/lists`
+* Create a new subscriber -> `/api/subscribers`
+* If no new message, worker will sleep for 1 minute before querying
+
+##### Per Campaign smtp/messenger
+
+* In smtp config specify a name.
+* In create/update campaign specify same name. 
+* It will use that messenger to send outbound event.
+
+##### Query list by exact name
+
+* `/api/lists` specify `?name=` for exact lookup. Specify multiple times to search multiple
+
+##### Per Campaign `Sliding window limit`
+
+* config added to create/update campaign UI
+* config is removed from `Settings`>`Performance`
+* Allows setting limit per campaign per endpoint.
+
+##### Cloning of lists
+
+* Cloning action button on lists page. It copies all config, subscribers to the new list.
+
+##### Bug fixes
+
+* Campaign pause/stop. 
+	* Though stopped on UI, it used to run in bg over the last fetched subscriber list and loop stops quite late.
+	* Server config change forces a restart so the delta of unprocessed subscribers get lost.
+
+##### Default data
+
+* Skips default data creation for list, template, campaigns on install.
+* check_updates is false
 
 ## Installation
 
-### Docker
+Assumes we are on debian
 
-The latest image is available on DockerHub at [`listmonk/listmonk:latest`](https://hub.docker.com/r/listmonk/listmonk/tags?page=1&ordering=last_updated&name=latest).
-Download and use the sample [docker-compose.yml](https://github.com/knadh/listmonk/blob/master/docker-compose.yml).
+```bash
 
+apt-get install git git-lfs
 
-```shell
+cd dependencies
+curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+apt update
+apt install nodejs
+node -v
+
+corepack enable
+yarn set version stable
+yarn install
+
+wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
+sudo export PATH=$PATH:/usr/local/go/bin
+
+cd ..
+git clone https://github.com/pankajsoni19/listmonk
+
+cd listmonk
+
+# This builds the binary
+make dist
+
+# This wraps the binary into a docker image
+docker build -t YOUR-TAG .
+
+cd ..
+
 # Download the compose file to the current directory.
-curl -LO https://github.com/knadh/listmonk/raw/master/docker-compose.yml
+# Update image name with tag created above
+curl -LO https://raw.githubusercontent.com/pankajsoni19/listmonk/master/docker-compose.yml
 
 # Run the services in the background.
 docker compose up -d
 ```
-Visit `http://localhost:9000`
 
-See [installation docs](https://listmonk.app/docs/installation)
+For upgrade build the docker/binary. 
+
+* Stop previous container/binary.
+* Update compose file to point to new image or point to new binary and start
+
+Visit `http://localhost:9000`
 
 __________________
 
 ### Binary
-- Download the [latest release](https://github.com/knadh/listmonk/releases) and extract the listmonk binary.
 - `./listmonk --new-config` to generate config.toml. Edit it.
 - `./listmonk --install` to setup the Postgres DB (or `--upgrade` to upgrade an existing DB. Upgrades are idempotent and running them multiple times have no side effects).
 - Run `./listmonk` and visit `http://localhost:9000`

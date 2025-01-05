@@ -10,6 +10,7 @@ DROP TYPE IF EXISTS template_type CASCADE; CREATE TYPE template_type AS ENUM ('c
 DROP TYPE IF EXISTS user_type CASCADE; CREATE TYPE user_type AS ENUM ('user', 'api');
 DROP TYPE IF EXISTS user_status CASCADE; CREATE TYPE user_status AS ENUM ('enabled', 'disabled');
 DROP TYPE IF EXISTS role_type CASCADE; CREATE TYPE role_type AS ENUM ('user', 'list');
+DROP TYPE IF EXISTS campaign_run_type CASCADE; CREATE TYPE campaign_run_type AS ENUM ('list', 'event:sub');
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -52,19 +53,20 @@ DROP INDEX IF EXISTS idx_lists_name; CREATE INDEX idx_lists_name ON lists(name);
 DROP INDEX IF EXISTS idx_lists_created_at; CREATE INDEX idx_lists_created_at ON lists(created_at);
 DROP INDEX IF EXISTS idx_lists_updated_at; CREATE INDEX idx_lists_updated_at ON lists(updated_at);
 
-
 DROP TABLE IF EXISTS subscriber_lists CASCADE;
 CREATE TABLE subscriber_lists (
+    id                 SERIAL PRIMARY KEY,
     subscriber_id      INTEGER REFERENCES subscribers(id) ON DELETE CASCADE ON UPDATE CASCADE,
     list_id            INTEGER NULL REFERENCES lists(id) ON DELETE CASCADE ON UPDATE CASCADE,
     meta               JSONB NOT NULL DEFAULT '{}',
     status             subscription_status NOT NULL DEFAULT 'unconfirmed',
 
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    PRIMARY KEY(subscriber_id, list_id)
+    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+DROP INDEX IF EXISTS idx_uniq; CREATE UNIQUE INDEX idx_uniq ON subscriber_lists ( subscriber_id, list_id);
+
 DROP INDEX IF EXISTS idx_sub_lists_sub_id; CREATE INDEX idx_sub_lists_sub_id ON subscriber_lists(subscriber_id);
 DROP INDEX IF EXISTS idx_sub_lists_list_id; CREATE INDEX idx_sub_lists_list_id ON subscriber_lists(list_id);
 DROP INDEX IF EXISTS idx_sub_lists_status; CREATE INDEX idx_sub_lists_status ON subscriber_lists(status);
@@ -83,7 +85,6 @@ CREATE TABLE templates (
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE UNIQUE INDEX ON templates (is_default) WHERE is_default = true;
-
 
 -- campaigns
 DROP TABLE IF EXISTS campaigns CASCADE;
@@ -110,10 +111,17 @@ CREATE TABLE campaigns (
     template_id      INTEGER REFERENCES templates(id) ON DELETE SET DEFAULT DEFAULT 1,
 
     -- Progress and stats.
-    to_send            INT NOT NULL DEFAULT 0,
-    sent               INT NOT NULL DEFAULT 0,
-    max_subscriber_id  INT NOT NULL DEFAULT 0,
-    last_subscriber_id INT NOT NULL DEFAULT 0,
+    to_send                     INT NOT NULL DEFAULT 0,
+    sent                        INT NOT NULL DEFAULT 0,
+    last_subscriber_id          INT NOT NULL DEFAULT 0,
+    
+    -- sliding window
+    sliding_window              BOOLEAN NOT NULL DEFAULT false,
+    sliding_window_rate         INT NOT NULL DEFAULT 1,
+    sliding_window_duration     varchar(4) NOT NULL DEFAULT '1h',
+
+    -- campaign run type
+    run_type                    campaign_run_type NOT NULL DEFAULT 'list',
 
     -- Publishing.
     archive             BOOLEAN NOT NULL DEFAULT false,
@@ -228,16 +236,13 @@ INSERT INTO settings (key, value) VALUES
     ('app.message_rate', '10'),
     ('app.batch_size', '1000'),
     ('app.max_send_errors', '1000'),
-    ('app.message_sliding_window', 'false'),
-    ('app.message_sliding_window_duration', '"1h"'),
-    ('app.message_sliding_window_rate', '10000'),
     ('app.cache_slow_queries', 'false'),
     ('app.cache_slow_queries_interval', '"0 3 * * *"'),
     ('app.enable_public_archive', 'true'),
     ('app.enable_public_subscription_page', 'true'),
     ('app.enable_public_archive_rss_content', 'true'),
     ('app.send_optin_confirmation', 'true'),
-    ('app.check_updates', 'true'),
+    ('app.check_updates', 'false'),
     ('app.notify_emails', '["admin1@mysite.com", "admin2@mysite.com"]'),
     ('app.lang', '"en"'),
     ('privacy.individual_tracking', 'false'),

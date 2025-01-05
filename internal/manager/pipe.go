@@ -108,13 +108,9 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 		p.SlidingWindowDuration.Seconds() > 1
 
 	// Push messages.
-	for idx, s := range subs {
+	for _, s := range subs {
 
 		if p.stopped.Load() {
-			remaining := len(subs) - (idx + 1)
-			if remaining > 0 {
-				p.m.store.UpdateLastSubscriberId(p.camp.ID, remaining)
-			}
 			break
 		}
 
@@ -181,12 +177,15 @@ func (p *pipe) pauseFor(wait time.Duration) {
 }
 
 func (p *pipe) waitForEvent() bool {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
+
+	p.m.log.Printf("campaign: %s, will wait for events, at 1 min interval", p.camp.Name)
 
 	for {
 		select {
 		case <-ticker.C:
+			p.m.log.Printf("campaign %s, stopped: %t, has: %t", p.camp.Name, p.stopped.Load(), p.flagSubQueued.Load())
 			if p.stopped.Load() {
 				return false
 			}
@@ -271,11 +270,6 @@ func (p *pipe) cleanup() {
 	c, err := p.m.store.GetCampaign(p.camp.ID)
 	if err != nil {
 		p.m.log.Printf("error fetching campaign (%s) for ending: %v", p.camp.Name, err)
-		return
-	}
-
-	if c.RunType != "list" {
-		// ignore stop/cancel for list
 		return
 	}
 

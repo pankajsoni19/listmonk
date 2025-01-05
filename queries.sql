@@ -30,13 +30,13 @@ SELECT * FROM lists
     LEFT JOIN subscriber_lists ON (lists.id = subscriber_lists.list_id)
     WHERE subscriber_id = (SELECT id FROM sub)
     -- Optional list IDs or UUIDs to filter.
-    AND (CASE WHEN CARDINALITY($3::INT[]) > 0 THEN id = ANY($3::INT[])
-          WHEN CARDINALITY($4::UUID[]) > 0 THEN uuid = ANY($4::UUID[])
+    AND (CASE WHEN CARDINALITY($3::INT[]) > 0 THEN lists.id = ANY($3::INT[])
+          WHEN CARDINALITY($4::UUID[]) > 0 THEN lists.uuid = ANY($4::UUID[])
           ELSE TRUE
     END)
     AND (CASE WHEN $5 != '' THEN subscriber_lists.status = $5::subscription_status ELSE TRUE END)
     AND (CASE WHEN $6 != '' THEN lists.optin = $6::list_optin ELSE TRUE END)
-    ORDER BY id;
+    ORDER BY lists.id;
 
 -- name: get-subscriber-lists-lazy
 -- Get lists associations of subscribers given a list of subscriber IDs.
@@ -426,6 +426,7 @@ UPDATE subscriber_lists SET status='unsubscribed', updated_at=NOW()
 SELECT * FROM lists WHERE (CASE WHEN $1 = '' THEN 1=1 ELSE type=$1::list_type END)
     AND CASE
         -- Optional list IDs based on user permission.
+        WHEN CARDINALITY($5::text[]) > 0 THEN name = ANY($5::text[])
         WHEN $3 = TRUE THEN TRUE ELSE id = ANY($4::INT[])
     END
     ORDER BY CASE WHEN $2 = 'id' THEN id END, CASE WHEN $2 = 'name' THEN name END;
@@ -437,6 +438,7 @@ WITH ls AS (
         WHEN $1 > 0 THEN id = $1
         WHEN $2 != '' THEN uuid = $2::UUID
         WHEN $3 != '' THEN to_tsvector(name) @@ to_tsquery ($3)
+        WHEN CARDINALITY($11::text[]) > 0 THEN name = ANY($11::text[])
         ELSE TRUE
     END
     AND ($4 = '' OR type = $4::list_type)
@@ -496,7 +498,7 @@ WITH tpl AS (
 counts AS (
     -- This is going to be slow on large databases.
     SELECT
-        COALESCE(COUNT(DISTINCT sl.subscriber_id), 0) AS to_send, COALESCE(MAX(s.id), 0) AS max_sub_id
+        COALESCE(COUNT(DISTINCT sl.subscriber_id), 0) AS to_send
     FROM subscriber_lists sl
         JOIN lists l ON sl.list_id = l.id
         JOIN subscribers s ON sl.subscriber_id = s.id
@@ -509,11 +511,12 @@ counts AS (
 ),
 camp AS (
     INSERT INTO campaigns (uuid, type, name, subject, from_email, body, altbody, content_type, send_at, headers, 
-    tags, messenger, template_id, to_send, max_subscriber_id, archive, archive_slug, archive_template_id, archive_meta,
+    tags, messenger, template_id, to_send, archive, archive_slug, archive_template_id, archive_meta,
     sliding_window, sliding_window_rate, sliding_window_duration, run_type)
         SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-            (SELECT id FROM tpl), (SELECT to_send FROM counts),
-            (SELECT max_sub_id FROM counts), $15, $16,
+            (SELECT id FROM tpl), 
+            (SELECT to_send FROM counts),
+            $15, $16,
             (CASE WHEN $17 = 0 THEN (SELECT id FROM tpl) ELSE $17 END), $18,
             $20, $21, $22, $23
         RETURNING id
@@ -569,15 +572,46 @@ SELECT campaigns.*,
             ELSE uuid = $2
           END;
 
--- name: get-campaigns-for-lists
-SELECT campaigns.*,
-    COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1)) AS template_body
+-- name: get-campaigns-for-lists-runtype
+WITH camps AS (
+    SELECT campaigns.*
     FROM campaigns
     INNER JOIN campaign_lists ON campaign_lists.campaign_id = campaigns.id
-    LEFT JOIN templates ON templates.id = campaigns.template_id
     WHERE 
             campaign_lists.list_id = ANY($1::INT[])
         AND campaigns.run_type = $2
+),
+campLists AS (
+    -- Get the list_ids and their optin statuses for the campaigns found in the previous step.
+    SELECT lists.id AS list_id, campaign_id, optin FROM lists
+    INNER JOIN campaign_lists ON (campaign_lists.list_id = lists.id)
+    WHERE campaign_lists.campaign_id = ANY(SELECT id FROM camps)
+),
+counts AS (
+    SELECT 
+        camps.id AS campaign_id, 
+        COUNT(DISTINCT sl.subscriber_id) AS to_send
+    FROM camps
+    JOIN campLists cl ON cl.campaign_id = camps.id
+    JOIN subscriber_lists sl ON sl.list_id = cl.list_id
+        AND (
+            CASE
+                WHEN camps.type = 'optin' THEN sl.status = 'unconfirmed' AND cl.optin = 'double'
+                WHEN cl.optin = 'double' THEN sl.status = 'confirmed'
+                ELSE sl.status != 'unsubscribed'
+            END
+        )
+    JOIN subscribers s ON (s.id = sl.subscriber_id AND s.status != 'blocklisted')
+    GROUP BY camps.id
+),
+u AS (
+    -- For each campaign, update the to_send count.
+    UPDATE campaigns AS ca
+    SET to_send = co.to_send
+    FROM (SELECT * FROM counts) co
+    WHERE ca.id = co.campaign_id
+)
+SELECT camps.* FROM camps;
 
 -- name: copy-list-subscribers
 INSERT INTO subscriber_lists (subscriber_id, list_id, meta, status)
@@ -658,11 +692,9 @@ SELECT id, status, to_send, sent, started_at, updated_at
 
 -- name: next-campaigns
 -- Retreives campaigns that are running (or scheduled and the time's up) and need
--- to be processed. It updates the to_send count and max_subscriber_id of the campaign,
+-- to be processed. It updates the to_send count of the campaign,
 -- that is, the total number of subscribers to be processed across all lists of a campaign.
 -- Thus, it has a sideaffect.
--- In addition, it finds the max_subscriber_id, the upper limit across all lists of
--- a campaign. This is used to fetch and slice subscribers for the campaign in next-campaign-subscribers.
 WITH camps AS (
     -- Get all running campaigns and their template bodies (if the template's deleted, the default template body instead)
     SELECT campaigns.*, COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1)) AS template_body
@@ -684,7 +716,8 @@ campMedia AS (
     GROUP BY campaign_id
 ),
 counts AS (
-    SELECT camps.id AS campaign_id, COUNT(DISTINCT sl.subscriber_id) AS to_send, COALESCE(MAX(sl.subscriber_id), 0) AS max_subscriber_id
+    SELECT camps.id AS campaign_id, 
+        COUNT(DISTINCT sl.subscriber_id) AS to_send
     FROM camps
     JOIN campLists cl ON cl.campaign_id = camps.id
     JOIN subscriber_lists sl ON sl.list_id = cl.list_id
@@ -705,11 +738,10 @@ updateCounts AS (
     FROM uc WHERE campaigns.id = uc.campaign_id
 ),
 u AS (
-    -- For each campaign, update the to_send count and set the max_subscriber_id.
+    -- For each campaign, update the to_send count.
     UPDATE campaigns AS ca
     SET to_send = co.to_send,
         status = (CASE WHEN status != 'running' THEN 'running' ELSE status END),
-        max_subscriber_id = co.max_subscriber_id,
         started_at=(CASE WHEN ca.started_at IS NULL THEN NOW() ELSE ca.started_at END)
     FROM (SELECT * FROM counts) co
     WHERE ca.id = co.campaign_id
@@ -763,7 +795,7 @@ SELECT COUNT(%s) AS "count", url
 -- name: get-running-campaign
 -- Returns the metadata for a running campaign that is required by next-campaign-subscribers to retrieve
 -- a batch of campaign subscribers for processing.
-SELECT campaigns.id AS campaign_id, campaigns.type as campaign_type, last_subscriber_id, max_subscriber_id, lists.id AS list_id
+SELECT campaigns.id AS campaign_id, campaigns.type as campaign_type, last_subscriber_id, lists.id AS list_id
     FROM campaigns
     LEFT JOIN campaign_lists ON (campaign_lists.campaign_id = campaigns.id)
     LEFT JOIN lists ON (lists.id = campaign_lists.list_id)
@@ -781,24 +813,24 @@ SELECT campaigns.id AS campaign_id, campaigns.type as campaign_type, last_subscr
 -- the query planner works as expected. The difference is staggering. ~15 seconds on a subscribers table with 15m
 -- rows and a subscriber_lists table with 70 million rows when fetching subscribers for a campaign with a single list,
 -- vs. a few million seconds using this current approach.
+
+-- // camps[0].CampaignID, camps[0].CampaignType, camps[0].LastSubscriberID, pq.Array(listIDs), limit
 WITH campLists AS (
     SELECT lists.id AS list_id, optin FROM lists
     LEFT JOIN campaign_lists ON campaign_lists.list_id = lists.id
     WHERE campaign_lists.campaign_id = $1
 ),
 subs AS (
-    SELECT s.*
+    SELECT s.*, subIDs.slid
     FROM (
-        SELECT DISTINCT s.id
+        SELECT DISTINCT s.id, sl.id AS slid
         FROM subscriber_lists sl
         JOIN campLists ON sl.list_id = campLists.list_id
         JOIN subscribers s ON s.id = sl.subscriber_id
         WHERE
-            sl.list_id = ANY($5::INT[])
-            -- last_subscriber_id
-            AND s.id > $3
-             -- max_subscriber_id
-            AND s.id <= $4
+            sl.list_id = ANY($4::INT[])
+            -- max-subscriber-id
+            AND sl.id > $3
              -- Subscriber should not be blacklisted.
             AND s.status != 'blocklisted'
             AND (
@@ -815,19 +847,17 @@ subs AS (
                     )
                 )
             )
-        ORDER BY s.id LIMIT $6
-    ) subIDs JOIN subscribers s ON (s.id = subIDs.id) ORDER BY s.id
+        ORDER BY sl.id LIMIT $5
+    ) subIDs 
+    JOIN subscribers s ON (s.id = subIDs.id) 
+    ORDER BY slid ASC
 ),
 u AS (
     UPDATE campaigns
-    SET last_subscriber_id = (SELECT MAX(id) FROM subs), updated_at = NOW()
+    SET last_subscriber_id = (SELECT MAX(slid) FROM subs), updated_at = NOW()
     WHERE (SELECT COUNT(id) FROM subs) > 0 AND id=$1
 )
 SELECT * FROM subs;
-
--- name: update-campaign-last-sub-id
-UPDATE campaigns SET last_subscriber_id = GREATEST(last_subscriber_id - $2, 0)
-WHERE id = $1
 
 -- name: delete-campaign-views
 DELETE FROM campaign_views WHERE created_at < $1;
