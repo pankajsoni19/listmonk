@@ -26,13 +26,11 @@ jobs:
       - name: Install deps
         run: sudo apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
       
-      - name: Build
-        run: |
-          corepack enable
-          yarn set version stable
-          yarn install
+      - run: corepack enable
+      - run: yarn set version stable
+      - run: YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install
 
-      - name: Prepare Dependencies and Build
+      - name: Build
         run: make dist
 
       - name: Login to docker hub
