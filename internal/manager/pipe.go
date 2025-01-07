@@ -122,7 +122,6 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 		// Check if the sliding window is active.
 		if hasSliding {
 			p.ratelimiter.Take()
-
 		}
 	}
 
