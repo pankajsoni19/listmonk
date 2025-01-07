@@ -8,22 +8,21 @@ import (
 
 	"github.com/knadh/listmonk/models"
 	"github.com/paulbellamy/ratecounter"
+	"go.uber.org/ratelimit"
 )
 
 type pipe struct {
-	camp                  *models.Campaign
-	rate                  *ratecounter.RateCounter
-	SlidingWindowDuration time.Duration
-	slidingCount          int
-	slidingStart          time.Time
-	wg                    *sync.WaitGroup
-	sent                  atomic.Int64
-	lastID                atomic.Uint64
-	errors                atomic.Uint64
-	stopped               atomic.Bool
-	flagSubQueued         atomic.Bool
-	withErrors            atomic.Bool
-	m                     *Manager
+	camp          *models.Campaign
+	rate          *ratecounter.RateCounter
+	ratelimiter   ratelimit.Limiter
+	wg            *sync.WaitGroup
+	sent          atomic.Int64
+	lastID        atomic.Uint64
+	errors        atomic.Uint64
+	stopped       atomic.Bool
+	flagSubQueued atomic.Bool
+	withErrors    atomic.Bool
+	m             *Manager
 }
 
 // newPipe adds a campaign to the process queue.
@@ -44,17 +43,15 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 		return nil, err
 	}
 
-	dur, _ := time.ParseDuration(c.SlidingWindowDuration)
-
 	// Add the campaign to the active map.
 	p := &pipe{
-		camp:                  c,
-		rate:                  ratecounter.NewRateCounter(time.Minute),
-		SlidingWindowDuration: dur,
-		slidingStart:          time.Now(),
-		wg:                    &sync.WaitGroup{},
-		m:                     m,
+		camp: c,
+		rate: ratecounter.NewRateCounter(time.Minute),
+		wg:   &sync.WaitGroup{},
+		m:    m,
 	}
+
+	p.attachRateLimiter()
 
 	// Increment the waitgroup so that Wait() blocks immediately. This is necessary
 	// as a campaign pipe is created first and subscribers/messages under it are
@@ -103,9 +100,7 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 	}
 
 	// Is there a sliding window limit configured?
-	hasSliding := p.camp.SlidingWindow &&
-		p.camp.SlidingWindowRate > 0 &&
-		p.SlidingWindowDuration.Seconds() > 1
+	hasSliding := p.camp.SlidingWindow
 
 	// Push messages.
 	for _, s := range subs {
@@ -126,77 +121,12 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 
 		// Check if the sliding window is active.
 		if hasSliding {
-			diff := time.Since(p.slidingStart)
+			p.ratelimiter.Take()
 
-			// Window has expired. Reset the clock.
-			if diff >= p.SlidingWindowDuration {
-				p.slidingStart = time.Now()
-				p.slidingCount = 0
-				continue
-			}
-
-			// Have the messages exceeded the limit?
-			p.slidingCount++
-			if p.slidingCount >= p.camp.SlidingWindowRate {
-				wait := (p.SlidingWindowDuration - diff).Round(time.Second)
-
-				p.m.log.Printf("messages exceeded (%d) for the window (%v since %s). Sleeping for %s.",
-					p.slidingCount,
-					p.SlidingWindowDuration,
-					p.slidingStart.Format(time.RFC822Z),
-					wait)
-
-				p.slidingCount = 0
-
-				p.pauseFor(wait)
-			}
 		}
 	}
 
 	result <- &NextSubResult{Has: true}
-}
-
-func (p *pipe) pauseFor(wait time.Duration) {
-	startTime := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-
-			if p.stopped.Load() {
-				return
-			}
-
-			if time.Since(startTime) > wait {
-				return
-			}
-		}
-	}
-}
-
-func (p *pipe) waitForEvent() bool {
-	ticker := time.NewTicker(1 * time.Minute)
-	defer ticker.Stop()
-
-	p.m.log.Printf("campaign: %s, will wait for events, at 1 min interval", p.camp.Name)
-
-	for {
-		select {
-		case <-ticker.C:
-			p.m.log.Printf("campaign %s, stopped: %t, has: %t", p.camp.Name, p.stopped.Load(), p.flagSubQueued.Load())
-			if p.stopped.Load() {
-				return false
-			}
-
-			if p.flagSubQueued.Load() {
-				p.flagSubQueued.Store(false)
-				p.m.log.Printf("campaign: %s, got event", p.camp.Name)
-				return true
-			}
-		}
-	}
 }
 
 func (p *pipe) OnError() {
