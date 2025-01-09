@@ -124,7 +124,7 @@
                       </b-field>
                     </div>
 
-                    <div class="column is-3" v-if="form.slidingWindow">
+                    <div class="column is-4" v-if="form.slidingWindow">
                       <b-field :label="$t('campaigns.slidingWindowRate')" label-position="on-border"
                         :message="$t('campaigns.slidingWindowRateHelp')">
                         <b-numberinput v-model="form.slidingWindowRate" type="is-light"
