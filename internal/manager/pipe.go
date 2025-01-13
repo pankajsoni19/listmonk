@@ -137,16 +137,16 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 			// Have the messages exceeded the limit?
 			p.slidingCount++
 			if p.slidingCount >= p.camp.SlidingWindowRate {
-				wait := p.SlidingWindowDuration - diff
+				wait := (p.SlidingWindowDuration - diff).Round(time.Second)
 
 				p.m.log.Printf("messages exceeded (%d) for the window (%v since %s). Sleeping for %s.",
 					p.slidingCount,
 					p.SlidingWindowDuration,
 					p.slidingStart.Format(time.RFC822Z),
-					wait.Round(time.Second)*1)
+					time.Second)
 
 				p.slidingCount = 0
-				time.Sleep(wait)
+				p.pauseFor(wait)
 			}
 		}
 	}
@@ -195,6 +195,23 @@ func (p *pipe) newMessage(s models.Subscriber) (CampaignMessage, error) {
 	p.wg.Add(1)
 
 	return msg, nil
+}
+
+func (p *pipe) pauseFor(wait time.Duration) {
+	startTime := time.Now()
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if p.stopped.Load() {
+				return
+			}
+			if time.Since(startTime) > wait {
+				return
+			}
+		}
+	}
 }
 
 // long running campaign, wait for event

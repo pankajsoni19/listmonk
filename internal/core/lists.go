@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gofrs/uuid/v5"
@@ -13,8 +12,6 @@ import (
 // GetLists gets all lists optionally filtered by type.
 func (c *Core) GetLists(typ string, getAll bool, permittedIDs []int, names []string) ([]models.List, error) {
 	out := []models.List{}
-
-	fmt.Print("getlists...", typ, getAll, permittedIDs, names)
 
 	if err := c.q.GetLists.Select(&out, typ, "id", getAll, pq.Array(permittedIDs), pq.Array(names)); err != nil {
 		c.log.Printf("error fetching lists: %v", err)
