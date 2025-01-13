@@ -29,6 +29,7 @@ func handleGetServerConfig(c echo.Context) error {
 	var (
 		app = c.Get("app").(*App)
 	)
+
 	out := serverConfig{
 		RootURL:       app.constants.RootURL,
 		FromEmail:     app.constants.FromEmail,

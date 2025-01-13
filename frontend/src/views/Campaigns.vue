@@ -432,6 +432,7 @@ export default Vue.extend({
         sliding_window: c.slidingWindow,
         sliding_window_rate: c.slidingWindowRate || 1,
         sliding_window_duration: c.slidingWindowDuration || '1h',
+        run_type: c.runType,
       };
 
       if (c.archive) {

@@ -8,21 +8,22 @@ import (
 
 	"github.com/knadh/listmonk/models"
 	"github.com/paulbellamy/ratecounter"
-	"go.uber.org/ratelimit"
 )
 
 type pipe struct {
-	camp          *models.Campaign
-	rate          *ratecounter.RateCounter
-	ratelimiter   ratelimit.Limiter
-	wg            *sync.WaitGroup
-	sent          atomic.Int64
-	lastID        atomic.Uint64
-	errors        atomic.Uint64
-	stopped       atomic.Bool
-	flagSubQueued atomic.Bool
-	withErrors    atomic.Bool
-	m             *Manager
+	camp                  *models.Campaign
+	rate                  *ratecounter.RateCounter
+	wg                    *sync.WaitGroup
+	sent                  atomic.Int64
+	lastID                atomic.Uint64
+	errors                atomic.Uint64
+	stopped               atomic.Bool
+	flagSubQueued         atomic.Bool
+	withErrors            atomic.Bool
+	m                     *Manager
+	slidingStart          time.Time
+	SlidingWindowDuration time.Duration
+	slidingCount          int
 }
 
 // newPipe adds a campaign to the process queue.
@@ -43,15 +44,18 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 		return nil, err
 	}
 
+	dur, _ := time.ParseDuration(c.SlidingWindowDuration)
+
 	// Add the campaign to the active map.
 	p := &pipe{
-		camp: c,
-		rate: ratecounter.NewRateCounter(time.Minute),
-		wg:   &sync.WaitGroup{},
-		m:    m,
+		camp:                  c,
+		rate:                  ratecounter.NewRateCounter(time.Minute),
+		wg:                    &sync.WaitGroup{},
+		m:                     m,
+		slidingStart:          time.Now(),
+		SlidingWindowDuration: dur,
+		slidingCount:          0,
 	}
-
-	p.attachRateLimiter()
 
 	// Increment the waitgroup so that Wait() blocks immediately. This is necessary
 	// as a campaign pipe is created first and subscribers/messages under it are
@@ -121,7 +125,29 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 
 		// Check if the sliding window is active.
 		if hasSliding {
-			p.ratelimiter.Take()
+			diff := time.Now().Sub(p.slidingStart)
+
+			// Window has expired. Reset the clock.
+			if diff >= p.SlidingWindowDuration {
+				p.slidingStart = time.Now()
+				p.slidingCount = 0
+				continue
+			}
+
+			// Have the messages exceeded the limit?
+			p.slidingCount++
+			if p.slidingCount >= p.camp.SlidingWindowRate {
+				wait := p.SlidingWindowDuration - diff
+
+				p.m.log.Printf("messages exceeded (%d) for the window (%v since %s). Sleeping for %s.",
+					p.slidingCount,
+					p.SlidingWindowDuration,
+					p.slidingStart.Format(time.RFC822Z),
+					wait.Round(time.Second)*1)
+
+				p.slidingCount = 0
+				time.Sleep(wait)
+			}
 		}
 	}
 
@@ -169,6 +195,30 @@ func (p *pipe) newMessage(s models.Subscriber) (CampaignMessage, error) {
 	p.wg.Add(1)
 
 	return msg, nil
+}
+
+// long running campaign, wait for event
+func (p *pipe) waitForEvent() bool {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	p.m.log.Printf("campaign: %s, will wait for events, at 1 min interval", p.camp.Name)
+
+	for {
+		select {
+		case <-ticker.C:
+			p.m.log.Printf("campaign %s, stopped: %t, has: %t", p.camp.Name, p.stopped.Load(), p.flagSubQueued.Load())
+			if p.stopped.Load() {
+				return false
+			}
+
+			if p.flagSubQueued.Load() {
+				p.flagSubQueued.Store(false)
+				p.m.log.Printf("campaign: %s, got event", p.camp.Name)
+				return true
+			}
+		}
+	}
 }
 
 func (p *pipe) cleanup() {
