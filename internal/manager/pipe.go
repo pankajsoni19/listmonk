@@ -125,7 +125,7 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 
 		// Check if the sliding window is active.
 		if hasSliding {
-			diff := time.Now().Sub(p.slidingStart)
+			diff := time.Since(p.slidingStart)
 
 			// Window has expired. Reset the clock.
 			if diff >= p.SlidingWindowDuration {
