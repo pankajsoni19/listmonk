@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,8 +38,6 @@ func handleGetLists(c echo.Context) error {
 	} else {
 		permittedIDs = user.GetListIDs
 	}
-
-	fmt.Println("names", names)
 
 	// Minimal query simply returns the list of all lists without JOIN subscriber counts. This is fast.
 	if minimal {
