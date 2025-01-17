@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "Показать страницу общедоступной подписки со всеми общедоступными списками, на которые можно подписаться.",
     "settings.general.faviconURL": "URL-адрес фавикона",
     "settings.general.faviconURLHelp": "(Необязательно) полный URL на favicon, который будет отображён, например, на странице отписки",
-    "settings.general.fromEmail": "Адрес`from` по умолчанию",
-    "settings.general.fromEmailHelp": "Адрес `from` по умолчанию для отображения в исходящих письмах кампании. Можно изменить для каждой кампании.",
     "settings.general.language": "Язык",
     "settings.general.logoURL": "URL логотипа",
     "settings.general.logoURLHelp": "(Необязательно) полный URL на логотип, который будет отображён, например, на странице отписки.",

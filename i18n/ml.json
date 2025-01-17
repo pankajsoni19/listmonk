@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "ആളുകൾക്ക് വരിക്കാരാകാനുള്ള എല്ലാ പൊതു ലിസ്റ്റുകളുമുള്ള പൊതുവായ ഒരു താൾ കാണിക്കുക.",
     "settings.general.faviconURL": "ഫാവ് ഐക്കൺ URL",
     "settings.general.faviconURLHelp": "(ഐച്ഛികം) വരിക്കാരനല്ലാതാകാനുള്ള പേജുപോലുള്ള പൊതുവായ പേജുകളിൽ കാണിക്കുന്നതിനുവേണ്ടിയുള്ള ഫാവ് ഐക്കണിന്റെ പൂർണ്ണ വെബ് വിലാസം.",
-    "settings.general.fromEmail": "സ്ഥിരസ്ഥിതി `from` ഇ-മെയിൽ",
-    "settings.general.fromEmailHelp": "(ഐച്ഛികം) വരിക്കാരനല്ലാതാകാനുള്ള പേജുപോലുള്ള പൊതുവായ പേജുകളിൽ കാണിക്കുന്നതിനുവേണ്ടിയുള്ള ലോഗോയുടെ പൂർണ്ണ വെബ് വിലാസം.",
     "settings.general.language": "ഭാഷ",
     "settings.general.logoURL": "ലോഗോ URL",
     "settings.general.logoURLHelp": "(ഐച്ഛികം) വരിക്കാരനല്ലാതാകാനുള്ള പേജുപോലുള്ള പൊതുവായ പേജുകളിൽ കാണിക്കുന്നതിനുവേണ്ടിയുള്ള ലോഗോയുടെ പൂർണ്ണ വെബ് വിലാസം.",

@@ -43,7 +43,6 @@ func (app *App) sendNotification(toEmails []string, subject, tplName string, dat
 
 	m := models.Message{}
 	m.ContentType = app.notifTpls.contentType
-	m.From = app.constants.FromEmail
 	m.To = toEmails
 	m.Subject = subject
 	m.Body = body

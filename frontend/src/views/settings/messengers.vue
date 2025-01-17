@@ -46,6 +46,16 @@
                 </b-field>
               </div>
             </div><!-- auth -->
+
+            <div class="columns">
+              <div class="column is-8">
+                <b-field :label="$t('settings.messengers.from')" label-position="on-border"
+                  :message="$t('settings.messengers.fromHelp')">
+                  <b-input v-model="item.wfrom" name="wfrom"
+                    placeholder="Name <noreply@pankaj.yoursite.com>,10,Name <noreply@pankaj.yoursite.com>,20" :maxlength="300" />
+                </b-field>
+              </div>
+            </div>
             <hr />
 
             <div class="columns">

@@ -318,7 +318,6 @@ type Campaign struct {
 	Type              string          `db:"type" json:"type"`
 	Name              string          `db:"name" json:"name"`
 	Subject           string          `db:"subject" json:"subject"`
-	FromEmail         string          `db:"from_email" json:"from_email"`
 	Body              string          `db:"body" json:"body"`
 	AltBody           null.String     `db:"altbody" json:"altbody"`
 	SendAt            null.Time       `db:"send_at" json:"send_at"`
@@ -443,7 +442,6 @@ type Bounce struct {
 
 // Message is the message pushed to a Messenger.
 type Message struct {
-	From        string
 	To          []string
 	Subject     string
 	ContentType string
@@ -480,7 +478,6 @@ type TxMessage struct {
 
 	TemplateID  int                    `json:"template_id"`
 	Data        map[string]interface{} `json:"data"`
-	FromEmail   string                 `json:"from_email"`
 	Headers     Headers                `json:"headers"`
 	ContentType string                 `json:"content_type"`
 	Messenger   string                 `json:"messenger"`

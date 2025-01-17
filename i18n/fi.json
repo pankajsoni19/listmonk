@@ -415,8 +415,6 @@
     "settings.general.enablePublicSubPageHelp": "Näytä julkinen lomakkeessa kaikki julkiset listat, joista on mahdollista tilata.",
     "settings.general.faviconURL": "Faviconin URL-osoite",
     "settings.general.faviconURLHelp": "(Valinnainen) täydellinen URL faviconiksi määriteltävälle staattiselle tiedostolle, joka näytetään käyttäjien ulottuvilla näkyvissä olevissa näkymissä, kuten peruutussivulla.",
-    "settings.general.fromEmail": "Oletuslähettäjän sähköposti",
-    "settings.general.fromEmailHelp": "Oletusarvoinen `from`-sähköpostiosoite lähteville kampanjasähköposteille. Tätä voidaan muuttaa kullekin kampanjalle erikseen.",
     "settings.general.language": "Kieli",
     "settings.general.logoURL": "Logon URL-osoite",
     "settings.general.logoURLHelp": "(Valinnainen) täydellinen URL logoa varten näytettäväksi käyttäjän ulottuvilla näkyvissä olevissa näkymissä, kuten peruutussivulla.",

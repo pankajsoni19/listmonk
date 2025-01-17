@@ -67,11 +67,6 @@
                     :placeholder="$t('campaigns.subject')" required />
                 </b-field>
 
-                <b-field :label="$t('campaigns.fromAddress')" label-position="on-border">
-                  <b-input :maxlength="200" v-model="form.fromEmail" name="from_email" :disabled="!canEdit"
-                    :placeholder="$t('campaigns.fromAddressPlaceholder')" required />
-                </b-field>
-
                 <list-selector v-model="form.lists" :selected="form.lists" :all="lists.results" :disabled="!canEdit"
                   :label="$t('globals.terms.lists')" :placeholder="$t('campaigns.sendToLists')" />
 
@@ -357,7 +352,6 @@ export default Vue.extend({
         archiveSlug: null,
         name: '',
         subject: '',
-        fromEmail: '',
         headersStr: '[]',
         headers: [],
         messenger: 'email',
@@ -516,7 +510,6 @@ export default Vue.extend({
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        from_email: this.form.fromEmail,
         messenger: this.form.messenger,
         type: 'regular',
         headers: this.form.headers,
@@ -541,7 +534,6 @@ export default Vue.extend({
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        from_email: this.form.fromEmail,
         content_type: 'richtext',
         messenger: this.form.messenger,
         type: 'regular',
@@ -570,7 +562,6 @@ export default Vue.extend({
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        from_email: this.form.fromEmail,
         messenger: this.form.messenger,
         type: 'regular',
         tags: this.form.tags,
@@ -725,9 +716,6 @@ export default Vue.extend({
 
   mounted() {
     window.onbeforeunload = () => this.isUnsaved() || null;
-
-    // Fill default form fields.
-    this.form.fromEmail = this.serverConfig.from_email;
 
     // New campaign.
     const { id } = this.$route.params;

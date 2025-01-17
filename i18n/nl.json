@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "Laat een publieke inschrijvingspagina zien met alle publieke lijsten waarmee mensen zich kunnen inschrijven.",
     "settings.general.faviconURL": "Favicon-URL",
     "settings.general.faviconURLHelp": "(Optional) volledige URL naar het favicon om te laten zien op user-facing pagina's zoals de uitschrijfpagina.",
-    "settings.general.fromEmail": "Standaard afzender e-mail",
-    "settings.general.fromEmailHelp": "Default afzender e-mail voor uitgaande campagnemails. Dit kan aangepast worden per campagne.",
     "settings.general.language": "Taal",
     "settings.general.logoURL": "Logo-URL",
     "settings.general.logoURLHelp": "(Optional) volledige URL naar het logo om te laten zien op user-facing pagina's zoals de uitschrijfpagina.",

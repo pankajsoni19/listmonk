@@ -415,8 +415,6 @@
     "settings.general.enablePublicSubPageHelp": "Kişilerin abone olması için tüm genel listeleri içeren genel bir abonelik sayfası gösterin.",
     "settings.general.faviconURL": "Favicon URL'si",
     "settings.general.faviconURLHelp": "(İsteğe bağlı) abonelik iptal sayfası gibi kullanıcıya bakan görünümde görüntülenecek statik faviconun tam URL'si.",
-    "settings.general.fromEmail": "Varsayılan `gelen` e-postası",
-    "settings.general.fromEmailHelp": "Varsayılan `gelen` e-postası, tüm gönderilen kampanyalarda gösterilecek. Her kampanya için değiştirilebilir.",
     "settings.general.language": "Dil",
     "settings.general.logoURL": "Logo URL'i",
     "settings.general.logoURLHelp": "(İsteğe bağlı) abonelik iptal sayfası gibi kullanıcıya bakan görünümde görüntülenecek statik logonun tam URL'si.",

@@ -296,7 +296,6 @@ export default Vue.extend({
         name: this.$t('lists.optinTo', { name: list.name }),
         subject: this.$t('lists.confirmSub', { name: list.name }),
         lists: [list.id],
-        from_email: this.settings['app.from_email'],
         content_type: 'richtext',
         messenger: 'email',
         type: 'optin',

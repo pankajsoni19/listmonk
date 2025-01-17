@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/smtp"
 	"net/textproto"
+	"strconv"
 	"strings"
 
 	"github.com/knadh/listmonk/models"
 	"github.com/knadh/smtppool"
+	"github.com/mroth/weightedrand/v2"
 )
 
 const (
@@ -16,6 +18,44 @@ const (
 	hdrBcc        = "Bcc"
 	hdrCc         = "Cc"
 )
+
+func (s Server) makeChooser() *weightedrand.Chooser[string, int] {
+	parts := strings.Split(s.WFrom, ",")
+
+	var lastKey string
+	choiceVal := make(map[string]int)
+
+	for idx, part := range parts {
+		spart := strings.TrimSpace(part)
+
+		if len(parts) == idx+1 && len(spart) == 0 {
+			break
+		}
+
+		if len(lastKey) > 0 {
+			if v, e := strconv.Atoi(spart); e == nil {
+				choiceVal[lastKey] = v
+				lastKey = ""
+				continue
+			}
+		}
+
+		choiceVal[spart] = 1
+		lastKey = spart
+	}
+
+	choices := make([]weightedrand.Choice[string, int], 0)
+	for k, v := range choiceVal {
+		choices = append(choices, weightedrand.Choice[string, int]{
+			Item:   k,
+			Weight: v,
+		})
+	}
+
+	chooser, _ := weightedrand.NewChooser(choices...)
+
+	return chooser
+}
 
 // Server represents an SMTP server's credentials.
 type Server struct {
@@ -27,6 +67,7 @@ type Server struct {
 	TLSSkipVerify bool              `json:"tls_skip_verify"`
 	EmailHeaders  map[string]string `json:"email_headers"`
 	Default       bool              `json:"default"`
+	WFrom         string            `json:"wfrom"`
 
 	// Rest of the options are embedded directly from the smtppool lib.
 	// The JSON tag is for config unmarshal to work.
@@ -37,12 +78,12 @@ type Server struct {
 
 // Emailer is the SMTP e-mail messenger.
 type Emailer struct {
-	server *Server
+	server  *Server
+	chooser *weightedrand.Chooser[string, int]
 }
 
 // New returns an SMTP e-mail Messenger backend with the given SMTP servers.
 func New(s Server) (*Emailer, error) {
-
 	switch s.AuthProtocol {
 	case "cram":
 		s.Opt.Auth = smtp.CRAMMD5Auth(s.Username, s.Password)
@@ -78,7 +119,8 @@ func New(s Server) (*Emailer, error) {
 	s.pool = pool
 
 	e := &Emailer{
-		server: &s,
+		server:  &s,
+		chooser: s.makeChooser(),
 	}
 
 	return e, nil
@@ -115,7 +157,7 @@ func (e *Emailer) Push(m models.Message) error {
 	}
 
 	em := smtppool.Email{
-		From:        m.From,
+		From:        e.chooser.Pick(),
 		To:          m.To,
 		Subject:     m.Subject,
 		Attachments: files,

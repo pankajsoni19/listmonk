@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "Habilitar a página pública de inscrição com todas as listas públicas para as pessoas se inscreverem.",
     "settings.general.faviconURL": "URL do Favicon",
     "settings.general.faviconURLHelp": "(Opcional) URL completo do favicon estático para ser visualizado pelo usuário, como a página de cancelamento de inscrição.",
-    "settings.general.fromEmail": "E-mail `de` padrão",
-    "settings.general.fromEmailHelp": "E-mail `de` padrão é usada nas mensagens de e-mails enviadas. Isso pode ser alterado por campanha.",
     "settings.general.language": "Idioma",
     "settings.general.logoURL": "URL do logotipo",
     "settings.general.logoURLHelp": "(Opcional) URL completo do logotipo estático para ser visualizado pelo usuário, como a página de cancelamento de inscrição.",

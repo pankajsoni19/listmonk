@@ -493,7 +493,7 @@ DELETE FROM lists WHERE id = ALL($1);
 -- This creates the campaign and inserts campaign_lists relationships.
 WITH tpl AS (
     -- If there's no template_id given, use the default template.
-    SELECT (CASE WHEN $13 = 0 THEN id ELSE $13 END) AS id FROM templates WHERE is_default IS TRUE
+    SELECT (CASE WHEN $12 = 0 THEN (SELECT id FROM templates WHERE is_default IS TRUE) ELSE $12 END) AS id
 ),
 counts AS (
     -- This is going to be slow on large databases.
@@ -502,7 +502,7 @@ counts AS (
     FROM subscriber_lists sl
         JOIN lists l ON sl.list_id = l.id
         JOIN subscribers s ON sl.subscriber_id = s.id
-    WHERE sl.list_id = ANY($14::INT[])
+    WHERE sl.list_id = ANY($13::INT[])
       AND s.status != 'blocklisted'
       AND (
         (l.optin = 'double' AND sl.status = 'confirmed') OR
@@ -510,24 +510,24 @@ counts AS (
       )
 ),
 camp AS (
-    INSERT INTO campaigns (uuid, type, name, subject, from_email, body, altbody, content_type, send_at, headers, 
+    INSERT INTO campaigns (uuid, type, name, subject, body, altbody, content_type, send_at, headers, 
     tags, messenger, template_id, to_send, archive, archive_slug, archive_template_id, archive_meta,
     sliding_window, sliding_window_rate, sliding_window_duration, run_type)
-        SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+        SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
             (SELECT id FROM tpl), 
             (SELECT to_send FROM counts),
-            $15, $16,
-            (CASE WHEN $17 = 0 THEN (SELECT id FROM tpl) ELSE $17 END), $18,
-            $20, $21, $22, $23
+            $14, $15,
+            (CASE WHEN $16 = 0 THEN (SELECT id FROM tpl) ELSE $16 END), $17,
+            $19, $20, $21, $22
         RETURNING id
 ),
 med AS (
     INSERT INTO campaign_media (campaign_id, media_id, filename)
-        (SELECT (SELECT id FROM camp), id, filename FROM media WHERE id=ANY($19::INT[]))
+        (SELECT (SELECT id FROM camp), id, filename FROM media WHERE id=ANY($18::INT[]))
 ),
 insLists AS (
     INSERT INTO campaign_lists (campaign_id, list_id, list_name)
-        SELECT (SELECT id FROM camp), id, name FROM lists WHERE id=ANY($14::INT[])
+        SELECT (SELECT id FROM camp), id, name FROM lists WHERE id=ANY($13::INT[])
 )
 SELECT id FROM camp;
 
@@ -538,7 +538,7 @@ SELECT id FROM camp;
 -- there's a COUNT() OVER() that still returns the total result count
 -- for pagination in the frontend, albeit being a field that'll repeat
 -- with every resultant row.
-SELECT  c.id, c.uuid, c.name, c.subject, c.from_email,
+SELECT  c.id, c.uuid, c.name, c.subject,
         c.messenger, c.started_at, c.to_send, c.sent, c.type,
         c.body, c.altbody, c.send_at, c.headers, c.status, c.content_type, c.tags,
         c.template_id, c.archive, c.archive_slug, c.archive_template_id, c.archive_meta,
@@ -880,42 +880,41 @@ WITH camp AS (
     UPDATE campaigns SET
         name=$2,
         subject=$3,
-        from_email=$4,
-        body=$5,
-        altbody=(CASE WHEN $6 = '' THEN NULL ELSE $6 END),
-        content_type=$7::content_type,
-        send_at=$8::TIMESTAMP WITH TIME ZONE,
-        status=(CASE WHEN NOT $9 THEN 'draft' ELSE status END),
-        headers=$10,
-        tags=$11::VARCHAR(100)[],
-        messenger=$12,
-        template_id=$13,
-        archive=$15,
-        archive_slug=$16,
-        archive_template_id=$17,
-        archive_meta=$18,
-        sliding_window=$20,
-        sliding_window_rate=$21,
-        sliding_window_duration=$22,
-        run_type=$23,
+        body=$4,
+        altbody=(CASE WHEN $5 = '' THEN NULL ELSE $5 END),
+        content_type=$6::content_type,
+        send_at=$7::TIMESTAMP WITH TIME ZONE,
+        status=(CASE WHEN NOT $8 THEN 'draft' ELSE status END),
+        headers=$9,
+        tags=$10::VARCHAR(100)[],
+        messenger=$11,
+        template_id=$12,
+        archive=$14,
+        archive_slug=$15,
+        archive_template_id=$16,
+        archive_meta=$17,
+        sliding_window=$19,
+        sliding_window_rate=$20,
+        sliding_window_duration=$21,
+        run_type=$22,
         updated_at=NOW()
     WHERE id = $1 RETURNING id
 ),
 clists AS (
     -- Reset list relationships
-    DELETE FROM campaign_lists WHERE campaign_id = $1 AND NOT(list_id = ANY($14))
+    DELETE FROM campaign_lists WHERE campaign_id = $1 AND NOT(list_id = ANY($13))
 ),
 med AS (
     DELETE FROM campaign_media WHERE campaign_id = $1
-    AND ( media_id IS NULL or NOT(media_id = ANY($19))) RETURNING media_id
+    AND ( media_id IS NULL or NOT(media_id = ANY($18))) RETURNING media_id
 ),
 medi AS (
     INSERT INTO campaign_media (campaign_id, media_id, filename)
-        (SELECT $1 AS campaign_id, id, filename FROM media WHERE id=ANY($19::INT[]))
+        (SELECT $1 AS campaign_id, id, filename FROM media WHERE id=ANY($18::INT[]))
         ON CONFLICT (campaign_id, media_id) DO NOTHING
 )
 INSERT INTO campaign_lists (campaign_id, list_id, list_name)
-    (SELECT $1 as campaign_id, id, name FROM lists WHERE id=ANY($14::INT[]))
+    (SELECT $1 as campaign_id, id, name FROM lists WHERE id=ANY($13::INT[]))
     ON CONFLICT (campaign_id, list_id) DO UPDATE SET list_name = EXCLUDED.list_name;
 
 -- name: update-campaign-counts

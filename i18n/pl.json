@@ -415,8 +415,6 @@
     "settings.general.enablePublicSubPageHelp": "Pokaż publiczną stronę do zapisu na subskrypcje publicznych list.",
     "settings.general.faviconURL": "URL Favicony",
     "settings.general.faviconURLHelp": "(Opcjonalnie) pełny URL do statycznej favicony. Będzie używana na takich stronach jak np strona do wypisania się ze subskrypcji.",
-    "settings.general.fromEmail": "Domyślny email `od`",
-    "settings.general.fromEmailHelp": "Domyślny email `od` do pokazania w wychodzących kampaniach emailowych. Może zostać zmienione w kampanii.",
     "settings.general.language": "Język",
     "settings.general.logoURL": "URL loga",
     "settings.general.logoURLHelp": "(Opcjonalne) pełny URL do statycznego loga. Będzie używana na takich stronach jak np strona do wypisania się ze subskrypcji.",

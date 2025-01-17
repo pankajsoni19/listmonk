@@ -415,8 +415,6 @@
     "settings.general.enablePublicSubPageHelp": "顯示一個公開的訂閱頁面，其中包含所有公開的清單供使用者訂閱。",
     "settings.general.faviconURL": "網站圖示 (favicon) 網址",
     "settings.general.faviconURLHelp": "（選擇性）在給使用者的介面（例如退訂頁面）上顯示的靜態網站 favicon 的完整 URL。",
-    "settings.general.fromEmail": "預設“寄件人”電子郵件",
-    "settings.general.fromEmailHelp": "預設“寄件人”電子郵件顯示在寄出的行銷活動電子郵件中。這可以在每個廣告中修改。",
     "settings.general.language": "語言",
     "settings.general.logoURL": "標誌網址",
     "settings.general.logoURLHelp": "（選擇性）在給使用者的介面（例如退訂頁面）上顯示的靜態標誌的完整 URL。",

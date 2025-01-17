@@ -101,7 +101,6 @@ func handlePreviewTemplate(c echo.Context) error {
 			UUID:         dummyUUID,
 			Name:         app.i18n.T("templates.dummyName"),
 			Subject:      app.i18n.T("templates.dummySubject"),
-			FromEmail:    "dummy-campaign@listmonk.app",
 			TemplateBody: tpl.Body,
 			Body:         dummyTpl,
 		}

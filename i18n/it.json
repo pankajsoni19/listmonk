@@ -410,8 +410,6 @@
     "settings.general.enablePublicSubPageHelp": "Visualizza una pagina di iscrizione pubblica con tutte le liste pubbliche a cui è possibile iscriversi.",
     "settings.general.faviconURL": "URL della favicon",
     "settings.general.faviconURLHelp": "(Facoltativo) URL completo della favicon statica visibile dall'utente, come sulla pagina per annullare l'iscrizione.",
-    "settings.general.fromEmail": "Indirizzo mail `Mittente` predefinito",
-    "settings.general.fromEmailHelp": "Indirizzo mail `Mittente` nelle mail delle campagne uscenti visibile in modo predefinito. Questo parametro è modificabile per ogni campagna.",
     "settings.general.language": "Lingua",
     "settings.general.logoURL": "URL del logo",
     "settings.general.logoURLHelp": "(Facoltativo) URL completo del logo statico visibile dall'utente come sulla pagina per annullare l'iscrizione.",

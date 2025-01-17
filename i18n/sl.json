@@ -412,8 +412,6 @@
     "settings.general.enablePublicSubPageHelp": "Prikaži javno naročniško stran z vsemi javnimi seznami, na katere se lahko ljudje naročijo.",
     "settings.general.faviconURL": "URL priljubljene ikone",
     "settings.general.faviconURLHelp": "(Izbirno) celoten URL do statične ikone priljubljene strani, ki bo prikazan v pogledu uporabnika, kot je stran za odjavo.",
-    "settings.general.fromEmail": "Privzeta e-pošta `od`",
-    "settings.general.fromEmailHelp": "Privzeta e-pošta `od` za prikaz v odhodni e-pošti oglaševalske akcije. To je mogoče spremeniti za vsako oglaševalsko akcijo.",
     "settings.general.language": "Jezik",
     "settings.general.logoURL": "URL logotipa",
     "settings.general.logoURLHelp": "(Izbirno) celoten URL do statičnega logotipa, ki bo prikazan v pogledu uporabnika, kot je stran za odjavo.",

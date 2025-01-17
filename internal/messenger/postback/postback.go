@@ -3,21 +3,25 @@ package postback
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/textproto"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/knadh/listmonk/models"
+	"github.com/mroth/weightedrand/v2"
 )
 
 // postback is the payload that's posted as JSON to the HTTP Postback server.
 //
 //easyjson:json
 type postback struct {
-	Subject     string       `json:"subject"`
 	FromEmail   string       `json:"from_email"`
+	Subject     string       `json:"subject"`
 	ContentType string       `json:"content_type"`
 	Body        string       `json:"body"`
 	Recipients  []recipient  `json:"recipients"`
@@ -56,6 +60,7 @@ type Options struct {
 	MaxConns int           `json:"max_conns"`
 	Retries  int           `json:"retries"`
 	Timeout  time.Duration `json:"timeout"`
+	WFrom    string        `json:"wfrom"`
 }
 
 // Postback represents an HTTP Message server.
@@ -63,6 +68,45 @@ type Postback struct {
 	authStr string
 	o       Options
 	c       *http.Client
+	chooser *weightedrand.Chooser[string, int]
+}
+
+func (o Options) makeChooser() *weightedrand.Chooser[string, int] {
+	parts := strings.Split(o.WFrom, ",")
+
+	var lastKey string
+	choiceVal := make(map[string]int)
+
+	for idx, part := range parts {
+		spart := strings.TrimSpace(part)
+
+		if len(parts) == idx+1 && len(spart) == 0 {
+			break
+		}
+
+		if len(lastKey) > 0 {
+			if v, e := strconv.Atoi(spart); e == nil {
+				choiceVal[lastKey] = v
+				lastKey = ""
+				continue
+			}
+		}
+
+		choiceVal[spart] = 1
+		lastKey = spart
+	}
+
+	choices := make([]weightedrand.Choice[string, int], 0)
+	for k, v := range choiceVal {
+		choices = append(choices, weightedrand.Choice[string, int]{
+			Item:   k,
+			Weight: v,
+		})
+	}
+
+	chooser, _ := weightedrand.NewChooser(choices...)
+
+	return chooser
 }
 
 // New returns a new instance of the HTTP Postback messenger.
@@ -85,6 +129,7 @@ func New(o Options) (*Postback, error) {
 				IdleConnTimeout:       o.Timeout,
 			},
 		},
+		chooser: o.makeChooser(),
 	}, nil
 }
 
@@ -99,9 +144,11 @@ func (p *Postback) IsDefault() bool {
 
 // Push pushes a message to the server.
 func (p *Postback) Push(m models.Message) error {
+	from := p.chooser.Pick()
+
 	pb := postback{
+		FromEmail:   from,
 		Subject:     m.Subject,
-		FromEmail:   m.From,
 		ContentType: m.ContentType,
 		Body:        string(m.Body),
 		Recipients: []recipient{{
@@ -115,7 +162,7 @@ func (p *Postback) Push(m models.Message) error {
 
 	if m.Campaign != nil {
 		pb.Campaign = &campaign{
-			FromEmail: m.Campaign.FromEmail,
+			FromEmail: from,
 			UUID:      m.Campaign.UUID,
 			Name:      m.Campaign.Name,
 			Headers:   m.Campaign.Headers,
@@ -137,7 +184,7 @@ func (p *Postback) Push(m models.Message) error {
 		pb.Attachments = files
 	}
 
-	b, err := pb.MarshalJSON()
+	b, err := json.Marshal(pb)
 	if err != nil {
 		return err
 	}
