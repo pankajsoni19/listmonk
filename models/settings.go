@@ -6,7 +6,6 @@ type Settings struct {
 	AppRootURL                    string   `json:"app.root_url"`
 	AppLogoURL                    string   `json:"app.logo_url"`
 	AppFaviconURL                 string   `json:"app.favicon_url"`
-	AppFromEmail                  string   `json:"app.from_email"`
 	AppNotifyEmails               []string `json:"app.notify_emails"`
 	EnablePublicSubPage           bool     `json:"app.enable_public_subscription_page"`
 	EnablePublicArchive           bool     `json:"app.enable_public_archive"`
@@ -76,6 +75,7 @@ type Settings struct {
 		TLSType       string              `json:"tls_type"`
 		TLSSkipVerify bool                `json:"tls_skip_verify"`
 		Default       bool                `json:"default"`
+		Wfrom         string              `json:"wfrom"`
 	} `json:"smtp"`
 
 	Messengers []struct {
@@ -88,6 +88,7 @@ type Settings struct {
 		MaxConns      int    `json:"max_conns"`
 		Timeout       string `json:"timeout"`
 		MaxMsgRetries int    `json:"max_msg_retries"`
+		Wfrom         string `json:"wfrom"`
 	} `json:"messengers"`
 
 	BounceEnabled        bool `json:"bounce.enabled"`

@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "Mostra una pàgina de subscripció pública amb totes les llistes públiques perquè la gent es subscrigui.",
     "settings.general.faviconURL": "URL del favicon",
     "settings.general.faviconURLHelp": "(Opcional) URL completa del favicon estàtic que serà visible a l'usuari, com ara la pàgina de cancel·lació de la subscripció.",
-    "settings.general.fromEmail": "Correu electrònic \"Remitent\" per defecte",
-    "settings.general.fromEmailHelp": "El correu electrònic `remitent` es mostra per defecte als correus electrònics de campanya sortints. Això es pot canviar per cada campanya.",
     "settings.general.language": "Idioma",
     "settings.general.logoURL": "URL del logotip",
     "settings.general.logoURLHelp": "(Opcional) URL completa del logotip estàtic que serà visible a l'usuari, com ara la pàgina de cancel·lació de la subscripció.",

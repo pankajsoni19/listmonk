@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "显示一个公共订阅页面，其中包含供人们订阅的所有公共列表。",
     "settings.general.faviconURL": "网站图标网址",
     "settings.general.faviconURLHelp": "（可选）要在面向用户的视图（例如退订页面）上显示的静态网站图标的完整 URL。",
-    "settings.general.fromEmail": "默认“发件人”电子邮件",
-    "settings.general.fromEmailHelp": "默认“发件人”电子邮件显示在传出的营销活动电子邮件中。这可以在每个广告系列中更改。",
     "settings.general.language": "语言",
     "settings.general.logoURL": "Logo网址",
     "settings.general.logoURLHelp": "（可选）要在面向用户的视图（例如退订页面）上显示的静态徽标的完整 URL。",

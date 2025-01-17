@@ -124,7 +124,6 @@ func handleSendTxMessage(c echo.Context) error {
 		msg := models.Message{}
 		msg.Subscriber = sub
 		msg.To = []string{sub.Email}
-		msg.From = m.FromEmail
 		msg.Subject = m.Subject
 		msg.ContentType = m.ContentType
 		msg.Messenger = m.Messenger
@@ -191,10 +190,6 @@ func validateTxMessage(m models.TxMessage, app *App) (models.TxMessage, error) {
 			}
 			m.SubscriberEmails[n] = em
 		}
-	}
-
-	if m.FromEmail == "" {
-		m.FromEmail = app.constants.FromEmail
 	}
 
 	if !app.manager.HasMessenger(m.Messenger) {

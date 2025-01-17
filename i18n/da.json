@@ -410,8 +410,6 @@
     "settings.general.enablePublicSubPageHelp": "Vis en offentlig abonnementsside med alle de offentlige lister, som folk kan abonnere på.",
     "settings.general.faviconURL": "Favicon-URL",
     "settings.general.faviconURLHelp": "(Valgfrit) fuld URL til det statiske favicon, der skal vises på brugervendt visning, såsom afmeldingssiden.",
-    "settings.general.fromEmail": "Standard 'fra' e-mail",
-    "settings.general.fromEmailHelp": "Standard 'fra' e-mail til at blive vist på udgående kampagne-e-mails. Dette kan ændres pr. kampagne.",
     "settings.general.language": "Sprog",
     "settings.general.logoURL": "URL-adresse til logo",
     "settings.general.logoURLHelp": "(Valgfrit) fuld URL til det statiske logo, der skal vises på brugervendt visning, såsom afmeldingssiden.",

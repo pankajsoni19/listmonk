@@ -410,8 +410,6 @@
     "settings.general.enablePublicSubPageHelp": "Zeige eine öffentliche Abonnement Seite mit allen öffentlichen Listen, die Personen abonnieren können.",
     "settings.general.faviconURL": "Favicon-URL",
     "settings.general.faviconURLHelp": "(Optional) Vollständige URL zu einem statischen Favicon, welches für angezeigten Seiten wie Abmelden benutzt werden kann.",
-    "settings.general.fromEmail": "Standard Absender-E-Mail",
-    "settings.general.fromEmailHelp": "(Optional) Standard E-Mail für z.B. Abmeldungen.",
     "settings.general.language": "Sprache",
     "settings.general.logoURL": "Logo-URL",
     "settings.general.logoURLHelp": "(Optional) Vollständige URL zu einem statischen Logo, welches für angezeigten Seiten wie Abmelden benutzt werden kann.",

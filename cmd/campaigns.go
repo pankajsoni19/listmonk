@@ -211,7 +211,7 @@ func handleCreateCampaign(c echo.Context) error {
 		o.ContentType = models.CampaignContentTypeRichtext
 	}
 	if o.Messenger == "" {
-		o.Messenger = "email"
+		o.Messenger = app.defaultMessenger.Name()
 	}
 
 	// Validate.
@@ -473,7 +473,6 @@ func handleTestCampaign(c echo.Context) error {
 	// Override certain values from the DB with incoming values.
 	camp.Name = req.Name
 	camp.Subject = req.Subject
-	camp.FromEmail = req.FromEmail
 	camp.Body = req.Body
 	camp.AltBody = req.AltBody
 	camp.Messenger = req.Messenger
@@ -565,14 +564,6 @@ func sendTestMessage(sub models.Subscriber, camp *models.Campaign, app *App) err
 
 // validateCampaignFields validates incoming campaign field values.
 func validateCampaignFields(c campaignReq, app *App) (campaignReq, error) {
-	if c.FromEmail == "" {
-		c.FromEmail = app.constants.FromEmail
-	} else if !regexFromAddress.Match([]byte(c.FromEmail)) {
-		if _, err := app.importer.SanitizeEmail(c.FromEmail); err != nil {
-			return c, errors.New(app.i18n.T("campaigns.fieldInvalidFromEmail"))
-		}
-	}
-
 	if !strHasLen(c.Name, 1, stdInputMaxLen) {
 		return c, errors.New(app.i18n.T("campaigns.fieldInvalidName"))
 	}

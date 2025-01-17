@@ -13,7 +13,6 @@ import (
 
 type serverConfig struct {
 	RootURL       string          `json:"root_url"`
-	FromEmail     string          `json:"from_email"`
 	Messengers    []string        `json:"messengers"`
 	Langs         []i18nLang      `json:"langs"`
 	Lang          string          `json:"lang"`
@@ -32,7 +31,6 @@ func handleGetServerConfig(c echo.Context) error {
 
 	out := serverConfig{
 		RootURL:       app.constants.RootURL,
-		FromEmail:     app.constants.FromEmail,
 		Lang:          app.constants.Lang,
 		Permissions:   app.constants.PermissionsRaw,
 		HasLegacyUser: app.constants.HasLegacyUser,

@@ -310,7 +310,6 @@ func handleTestSMTPSettings(c echo.Context) error {
 
 	m := models.Message{}
 	m.ContentType = app.notifTpls.contentType
-	m.From = app.constants.FromEmail
 	m.To = []string{to}
 	m.Subject = app.i18n.T("settings.smtp.testConnection")
 	m.Body = b.Bytes()

@@ -30,11 +30,6 @@
     </div>
 
     <hr />
-    <b-field :label="$t('settings.general.fromEmail')" label-position="on-border"
-      :message="$t('settings.general.fromEmailHelp')">
-      <b-input v-model="data['app.from_email']" name="app.from_email"
-        placeholder="Listmonk <noreply@listmonk.yoursite.com>" pattern="((.+?)\s)?<(.+?)@(.+?)>" :maxlength="300" />
-    </b-field>
     <b-field :label="$t('settings.general.adminNotifEmails')" label-position="on-border"
       :message="$t('settings.general.adminNotifEmailsHelp')">
       <b-taginput v-model="data['app.notify_emails']" name="app.notify_emails"

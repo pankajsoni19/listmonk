@@ -97,7 +97,6 @@ type CampaignMessage struct {
 	Campaign   *models.Campaign
 	Subscriber models.Subscriber
 
-	from     string
 	to       string
 	subject  string
 	body     []byte
@@ -115,7 +114,6 @@ type Config struct {
 	MessageRate        int
 	MaxSendErrors      int
 	RequeueOnError     bool
-	FromEmail          string
 	IndividualTracking bool
 	LinkTrackURL       string
 	UnsubURL           string
@@ -508,7 +506,6 @@ func (m *Manager) worker() {
 
 			// Outgoing message.
 			out := models.Message{
-				From:        msg.from,
 				To:          []string{msg.to},
 				Subject:     msg.subject,
 				ContentType: msg.Campaign.ContentType,

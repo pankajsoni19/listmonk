@@ -2869,10 +2869,6 @@ components:
               type: string
             settings.general.faviconURLHelp:
               type: string
-            settings.general.fromEmail:
-              type: string
-            settings.general.fromEmailHelp:
-              type: string
             settings.general.language:
               type: string
             settings.general.logoURL:

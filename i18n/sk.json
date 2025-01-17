@@ -414,8 +414,6 @@
     "settings.general.enablePublicSubPageHelp": "Zobraziť verejnú stránku odberu so všetkými verejnými zoznamami pre ľudí k odberu.",
     "settings.general.faviconURL": "URL adresa faviconu",
     "settings.general.faviconURLHelp": "(Voliteľné) Úplná adresa URL statickej favicon pre verejné stránky, ako je stránka zrušenia odberu.",
-    "settings.general.fromEmail": "Predvolený e-mail `od`",
-    "settings.general.fromEmailHelp": "Predvolená e-mailová adres `od` v odosielaných kampaniach. Dá sa nastaviť v každej kampani.",
     "settings.general.language": "Jazyk",
     "settings.general.logoURL": "URL adresa loga",
     "settings.general.logoURLHelp": "(Volitelné) Úplná adresa URL statického loga na verejných stránkach, ako je stránka na zrušenie odberu.",

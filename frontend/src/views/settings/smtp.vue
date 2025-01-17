@@ -26,6 +26,17 @@
                 </b-field>
               </div>
             </div>
+
+            <div class="columns">
+              <div class="column is-8">
+                <b-field :label="$t('settings.smtp.fromEmail')" label-position="on-border"
+                  :message="$t('settings.smtp.fromEmailHelp')">
+                  <b-input v-model="item.wfrom" name="wfrom"
+                    placeholder="Name <noreply@pankaj.yoursite.com>,10,Name <noreply@pankaj.yoursite.com>,20" :maxlength="300" />
+                </b-field>
+              </div>
+            </div>
+
             <div class="columns">
               <div class="column is-8">
                 <b-field :label="$t('settings.mailserver.host')" label-position="on-border"
@@ -169,11 +180,6 @@
             <form @submit.prevent="() => doSMTPTest(item, n)">
               <div class="columns">
                 <template v-if="smtpTestItem === n">
-                  <div class="column is-5">
-                    <strong>{{ $t('settings.general.fromEmail') }}</strong>
-                    <br />
-                    {{ settings['app.from_email'] }}
-                  </div>
                   <div class="column is-4">
                     <b-field :label="$t('settings.smtp.toEmail')" label-position="on-border">
                       <b-input type="email" required v-model="testEmail" :ref="'testEmailTo'"
@@ -291,13 +297,6 @@ export default Vue.extend({
       const s = this.data.smtp[i];
       s.showHeaders = true;
       this.data.smtp.splice(i, 1, s);
-    },
-
-    testConnection() {
-      let em = this.settings['app.from_email'].replace('>', '').split('<');
-      if (em.length > 1) {
-        em = `<${em[em.length - 1]}>`;
-      }
     },
 
     doSMTPTest(item, n) {
