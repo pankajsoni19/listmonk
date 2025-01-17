@@ -93,7 +93,6 @@ CREATE TABLE campaigns (
     uuid uuid        NOT NULL UNIQUE,
     name             TEXT NOT NULL,
     subject          TEXT NOT NULL,
-    from_email       TEXT NOT NULL,
     body             TEXT NOT NULL,
     altbody          TEXT NULL,
     content_type     content_type NOT NULL DEFAULT 'richtext',
