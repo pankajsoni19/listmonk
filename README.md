@@ -6,7 +6,7 @@ Visit [listmonk.app](https://listmonk.app) for more info.
 
 #### Changes from upstream
 
-I tagged it to db schema version, and will follow that as semver.
+I tagged it to db schema version, and will follow that as semver. Current `5.3.0`
 
 ##### Long running campaigns
 
