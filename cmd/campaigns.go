@@ -211,7 +211,7 @@ func handleCreateCampaign(c echo.Context) error {
 		o.ContentType = models.CampaignContentTypeRichtext
 	}
 	if o.Messenger == "" {
-		o.Messenger = "email"
+		o.Messenger = app.defaultMessenger.Name()
 	}
 
 	// Validate.

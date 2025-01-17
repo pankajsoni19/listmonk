@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -33,16 +32,6 @@ type subQueryReq struct {
 	All                bool   `json:"all"`
 }
 
-// subProfileData represents a subscriber's collated data in JSON
-// for export.
-type subProfileData struct {
-	Email         string          `db:"email" json:"-"`
-	Profile       json.RawMessage `db:"profile" json:"profile,omitempty"`
-	Subscriptions json.RawMessage `db:"subscriptions" json:"subscriptions,omitempty"`
-	CampaignViews json.RawMessage `db:"campaign_views" json:"campaign_views,omitempty"`
-	LinkClicks    json.RawMessage `db:"link_clicks" json:"link_clicks,omitempty"`
-}
-
 // subOptin contains the data that's passed to the double opt-in e-mail template.
 type subOptin struct {
 	models.Subscriber
@@ -59,10 +48,6 @@ var (
 		UUID:    dummyUUID,
 		Attribs: models.JSON{"city": "Bengaluru"},
 	}
-
-	subQuerySortFields = []string{"email", "name", "created_at", "updated_at"}
-
-	errSubscriberExists = errors.New("subscriber already exists")
 )
 
 // handleGetSubscriber handles the retrieval of a single subscriber by ID.
@@ -174,7 +159,7 @@ loop:
 		if err != nil {
 			return err
 		}
-		if out == nil || len(out) == 0 {
+		if len(out) == 0 {
 			break
 		}
 
@@ -421,7 +406,7 @@ func handleDeleteSubscribers(c echo.Context) error {
 		}
 		if len(i) == 0 {
 			return echo.NewHTTPError(http.StatusBadRequest,
-				app.i18n.Ts("subscribers.errorNoIDs", "error", err.Error()))
+				app.i18n.Ts("subscribers.errorNoIDs", "error"))
 		}
 		subIDs = i
 	}
