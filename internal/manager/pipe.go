@@ -143,7 +143,7 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 					p.slidingCount,
 					p.SlidingWindowDuration,
 					p.slidingStart.Format(time.RFC822Z),
-					time.Second)
+					wait)
 
 				p.slidingCount = 0
 				p.pauseFor(wait)
