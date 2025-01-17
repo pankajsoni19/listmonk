@@ -1,10 +1,10 @@
 name: Build image
 
 on:
-    push:
-      branch:
-        - master
-  
+  push:
+    branch:
+      - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,7 +15,7 @@ jobs:
 
       - name: Set up node
         uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 20.x
 
       - name: Set up Go
@@ -25,7 +25,7 @@ jobs:
 
       - name: Install deps
         run: sudo apt-get install -yq build-essential automake autoconf pkg-config cmake libssl-dev git git-lfs
-      
+
       - run: corepack enable
       - run: yarn set version stable
       - run: YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install
@@ -41,7 +41,7 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -51,7 +51,3 @@ jobs:
           context: .
           push: true
           tags: pankaj19soni/listmonk:5.20, pankaj19soni/listmonk:latest
-
-
-
-      
