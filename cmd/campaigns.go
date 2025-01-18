@@ -210,9 +210,6 @@ func handleCreateCampaign(c echo.Context) error {
 	if o.ContentType == "" {
 		o.ContentType = models.CampaignContentTypeRichtext
 	}
-	if o.Messenger == "" {
-		o.Messenger = app.defaultMessenger.Name()
-	}
 
 	// Validate.
 	if c, err := validateCampaignFields(o, app); err != nil {
@@ -479,6 +476,7 @@ func handleTestCampaign(c echo.Context) error {
 	camp.ContentType = req.ContentType
 	camp.Headers = req.Headers
 	camp.TemplateID = req.TemplateID
+	camp.TrafficType = req.TrafficType
 	for _, id := range req.MediaIDs {
 		if id > 0 {
 			camp.MediaIDs = append(camp.MediaIDs, int64(id))
@@ -582,10 +580,6 @@ func validateCampaignFields(c campaignReq, app *App) (campaignReq, error) {
 
 	if len(c.ListIDs) == 0 {
 		return c, errors.New(app.i18n.T("campaigns.fieldInvalidListIDs"))
-	}
-
-	if !app.manager.HasMessenger(c.Messenger) {
-		return c, errors.New(app.i18n.Ts("campaigns.fieldInvalidMessenger", "name", c.Messenger))
 	}
 
 	camp := models.Campaign{Body: c.Body, TemplateBody: tplTag}

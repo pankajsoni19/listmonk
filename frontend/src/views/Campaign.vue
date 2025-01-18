@@ -84,7 +84,7 @@
                 <div class="columns">
                   <div class="column is-4">
                     <b-field label="Traffic" label-position="on-border">
-                      <b-select v-model="form.traffic" name="run_type" :disabled="!canEdit">
+                      <b-select v-model="form.trafficType" name="run_type" :disabled="!canEdit">
                         <option value="split">
                           Split
                         </option>
@@ -98,14 +98,18 @@
 
                 <div class="columns">
                   <div class="column is-12">
-                    <b-field :label="$tc('globals.terms.messenger')" label-position="on-border" style="border-radius: 5px; border: 1px solid hsl(0, 0%, 86%); padding: 10px;box-shadow: 2px 2px 0 hsl(0, 0%, 96%);" :disabled="!canEditWindow">
+                    <b-field :label="$tc('globals.terms.messenger')"
+                    label-position="on-border"
+                    message="For spliting data choose integer weights between 1 to 1000. For duplicate all messages are replicated on all selected messengers"
+                    style="border-radius: 5px; border: 1px solid hsl(0, 0%, 86%); padding: 10px;box-shadow: 2px 2px 0 hsl(0, 0%, 96%);"
+                    :disabled="!canEditWindow">
                       <div style="display: flex; flex-direction: column;">
                         <div v-for="(item, index) in messengers" :key="index" style="display: flex; flex-direction: row; margin-top: 24px;">
                           <div style="min-width: 192px;align-content: center;">
-                            <b-checkbox v-model="selectedStates[item.id]" :disabled="!canEditWindow">{{ item.label }}</b-checkbox>
+                            <b-checkbox v-model="selectedStates[item.name]" :disabled="!canEditWindow">{{ item.name }}</b-checkbox>
                           </div>
-                          <b-field label="Weight" label-position="on-border" :hidden="form.traffic == 'duplicate'">
-                            <b-input :maxlength="2" :max="10" :min="1" placeholder="Weight..." style="width: 108px;" v-model="itemValues[item.id]" :disabled="!canEditWindow" />
+                          <b-field label="Weight" label-position="on-border" :hidden="form.trafficType == 'duplicate'">
+                            <b-input :maxlength="2" :max="10" :min="1" placeholder="Weight..." style="width: 108px;" v-model="itemValues[item.name]" :disabled="!canEditWindow" />
                           </b-field>
                         </div>
                       </div>
@@ -116,15 +120,6 @@
                 <div v-if="showError" style="color: red; padding-bottom: 24px;">
                   Please select at least one option and provide a weight between 1-1000
                 </div>
-
-                <!-- <b-field :label="$tc('globals.terms.messenger')" label-position="on-border">
-                  <b-select :placeholder="$tc('globals.terms.messenger')" v-model="form.messenger" name="messenger"
-                    :disabled="!canEdit" required multiple :select-size="2">
-                    <option v-for="m in messengers" :value="m" :key="m">
-                      {{ m }}
-                    </option>
-                  </b-select>
-                </b-field> -->
 
                 <b-field :label="$t('globals.terms.tags')" label-position="on-border">
                   <b-taginput v-model="form.tags" name="tags" :disabled="!canEdit" ellipsis icon="tag-outline"
@@ -397,7 +392,6 @@ export default Vue.extend({
         subject: '',
         headersStr: '[]',
         headers: [],
-        messenger: 'email',
         templateId: 0,
         lists: [],
         tags: [],
@@ -474,17 +468,36 @@ export default Vue.extend({
       const archiveStr = `{"email": "email@domain.com", "name": "${this.$t('globals.fields.name')}", "attribs": {}}`;
       this.form.archiveMetaStr = this.$utils.getPref('campaign.archiveMetaStr') || JSON.stringify(JSON.parse(archiveStr), null, 4);
     },
+    selectedMessengers() {
+      const filtered = this.messengers.filter((item) => this.selectedStates[item.name]);
 
+      return filtered.map((item) => {
+        const mrow = {
+          uuid: item.uuid,
+          name: item.name,
+          weight: parseInt(this.itemValues[item.name], 10) || 1,
+        };
+
+        return mrow;
+      });
+    },
     onSubmit(typ) {
-      if (this.selectedMessengers.length === 0) {
+      // type -> create | update | test
+      const messengers = this.selectedMessengers();
+
+      console.log(JSON.stringify(messengers));
+
+      if (messengers.length === 0) {
         this.showError = true;
         return;
       }
 
-      const outofbound = this.selectedMessengers.find((x) => !x.value || x.value < 1 || x.value > 1000);
-      if (outofbound) {
-        this.showError = true;
-        return;
+      if (this.form.trafficType === 'split') {
+        const outofbound = messengers.find((x) => !x.weight || x.weight < 1 || x.weight > 1000);
+        if (outofbound) {
+          this.showError = true;
+          return;
+        }
       }
 
       // Validate custom JSON headers.
@@ -532,6 +545,15 @@ export default Vue.extend({
     getCampaign(id) {
       return this.$api.getCampaign(id).then((data) => {
         this.data = data;
+
+        console.log('init', JSON.stringify(this.selectedStates), JSON.stringify(this.itemValues));
+
+        JSON.parse(data.messenger).forEach((m) => {
+          this.selectedStates[m.name] = true;
+          this.itemValues[m.name] = m.weight;
+        });
+
+        console.log('updated', JSON.stringify(this.selectedStates), JSON.stringify(this.itemValues));
         this.form = {
           ...this.form,
           ...data,
@@ -564,7 +586,7 @@ export default Vue.extend({
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        messenger: this.form.messenger,
+        messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         headers: this.form.headers,
         tags: this.form.tags,
@@ -574,6 +596,7 @@ export default Vue.extend({
         altbody: this.form.content.contentType !== 'plain' ? this.form.altbody : null,
         subscribers: this.form.testEmails,
         media: this.form.media.map((m) => m.id),
+        traffic_type: this.form.trafficType || 'split',
       };
 
       this.$api.testCampaign(data).then(() => {
@@ -583,18 +606,13 @@ export default Vue.extend({
     },
 
     createCampaign() {
-      const selectedMessengers = this.selectedMessengers.map((x) => {
-        const item = { weight: x.value, name: x.label };
-        return item;
-      });
-
       const data = {
         archiveSlug: this.form.subject,
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
         content_type: 'richtext',
-        messengers: selectedMessengers,
+        messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         tags: this.form.tags,
         send_later: this.form.sendLater,
@@ -606,7 +624,7 @@ export default Vue.extend({
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
         run_type: this.form.runType || 'list',
-        traffic: this.form.traffic || 'split',
+        traffic_type: this.form.trafficType || 'split',
         // body: this.form.body,
       };
 
@@ -617,17 +635,12 @@ export default Vue.extend({
     },
 
     async updateCampaign(typ) {
-      const selectedMessengers = this.selectedMessengers.map((x) => {
-        const item = { weight: x.value, name: x.label };
-        return item;
-      });
-
       const data = {
         archive_slug: this.form.archiveSlug,
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        messengers: selectedMessengers,
+        messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         tags: this.form.tags,
         send_later: this.form.sendLater,
@@ -645,7 +658,7 @@ export default Vue.extend({
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
         run_type: this.form.runType || 'list',
-        traffic: this.form.traffic || 'split',
+        traffic_type: this.form.trafficType || 'split',
       };
 
       let typMsg = 'globals.messages.updated';
@@ -761,19 +774,16 @@ export default Vue.extend({
       return this.lists.results.filter((l) => this.selListIDs.indexOf(l.id) > -1);
     },
     messengers() {
-      return this.serverConfig.messengers.map((name, idx) => {
-        const item = {
-          id: idx,
-          selected: this.selectedStates[idx] || false,
-          label: name,
-          value: this.itemValues[idx] || 1,
+      return this.serverConfig.messengers.map((item) => {
+        const row = {
+          uuid: item.uuid,
+          name: item.name,
+          selected: false,
+          weight: 1,
         };
 
-        return item;
+        return row;
       });
-    },
-    selectedMessengers() {
-      return this.messengers.filter((item) => item.selected);
     },
   },
 
@@ -836,8 +846,6 @@ export default Vue.extend({
           this.activeTab = this.$route.hash.replace('#', '');
         }
       });
-    } else {
-      this.form.messenger = 'email';
     }
 
     this.$nextTick(() => {

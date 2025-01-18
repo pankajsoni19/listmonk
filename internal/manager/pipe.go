@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/knadh/listmonk/models"
+	"github.com/mroth/weightedrand/v2"
 	"github.com/paulbellamy/ratecounter"
 )
 
@@ -24,16 +25,13 @@ type pipe struct {
 	slidingStart          time.Time
 	SlidingWindowDuration time.Duration
 	slidingCount          int
+	chooser               *weightedrand.Chooser[string, int]
+	messengers            []string
+	totalMessengers       int
 }
 
 // newPipe adds a campaign to the process queue.
 func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
-	// Validate messenger.
-	if _, ok := m.messengers[c.Messenger]; !ok {
-		m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
-		return nil, fmt.Errorf("unknown messenger %s on campaign %s", c.Messenger, c.Name)
-	}
-
 	// Load the template.
 	if err := c.CompileTemplate(m.TemplateFuncs(c)); err != nil {
 		return nil, err
@@ -46,6 +44,12 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 
 	dur, _ := time.ParseDuration(c.SlidingWindowDuration)
 
+	messengers, chooser, err := m.parseCampMessengers(c)
+
+	if err != nil {
+		return nil, err
+	}
+
 	// Add the campaign to the active map.
 	p := &pipe{
 		camp:                  c,
@@ -55,6 +59,9 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 		slidingStart:          time.Now(),
 		SlidingWindowDuration: dur,
 		slidingCount:          0,
+		chooser:               chooser,
+		messengers:            messengers,
+		totalMessengers:       len(messengers),
 	}
 
 	// Increment the waitgroup so that Wait() blocks immediately. This is necessary
@@ -121,7 +128,19 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 
 		// Push the message to the queue while blocking and waiting until
 		// the queue is drained.
-		p.m.campMsgQ <- msg
+		if p.camp.TrafficType == "split" {
+			// decide messanger and queue message
+			msg.messenger = p.chooser.Pick()
+			msg.hasMore = false
+			p.m.campMsgQ <- msg
+		} else {
+			// duplicate type, send to all messengers
+			for idx, messenger := range p.messengers {
+				msg.messenger = messenger
+				msg.hasMore = (idx < (p.totalMessengers - 1))
+				p.m.campMsgQ <- msg
+			}
+		}
 
 		// Check if the sliding window is active.
 		if hasSliding {

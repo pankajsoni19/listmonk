@@ -433,7 +433,7 @@ export default Vue.extend({
         sliding_window_duration: c.slidingWindowDuration || '1h',
         run_type: c.runType,
         messengers: c.messengers,
-        traffic: c.traffic,
+        traffic_type: c.trafficType,
       };
 
       if (c.archive) {
