@@ -81,14 +81,50 @@
                   </b-select>
                 </b-field>
 
-                <b-field :label="$tc('globals.terms.messenger')" label-position="on-border">
+                <div class="columns">
+                  <div class="column is-4">
+                    <b-field label="Traffic" label-position="on-border">
+                      <b-select v-model="form.traffic" name="run_type" :disabled="!canEdit">
+                        <option value="split">
+                          Split
+                        </option>
+                        <option value="duplicate">
+                          Duplicate
+                        </option>
+                      </b-select>
+                    </b-field>
+                  </div>
+                </div>
+
+                <div class="columns">
+                  <div class="column is-12">
+                    <b-field :label="$tc('globals.terms.messenger')" label-position="on-border" style="border-radius: 5px; border: 1px solid hsl(0, 0%, 86%); padding: 10px;box-shadow: 2px 2px 0 hsl(0, 0%, 96%);" :disabled="!canEditWindow">
+                      <div style="display: flex; flex-direction: column;">
+                        <div v-for="(item, index) in messengers" :key="index" style="display: flex; flex-direction: row; margin-top: 24px;">
+                          <div style="min-width: 192px;align-content: center;">
+                            <b-checkbox v-model="selectedStates[item.id]" :disabled="!canEditWindow">{{ item.label }}</b-checkbox>
+                          </div>
+                          <b-field label="Weight" label-position="on-border" :hidden="form.traffic == 'duplicate'">
+                            <b-input :maxlength="2" :max="10" :min="1" placeholder="Weight..." style="width: 108px;" v-model="itemValues[item.id]" :disabled="!canEditWindow" />
+                          </b-field>
+                        </div>
+                      </div>
+                    </b-field>
+                  </div>
+                </div>
+
+                <div v-if="showError" style="color: red; padding-bottom: 24px;">
+                  Please select at least one option and provide a weight between 1-1000
+                </div>
+
+                <!-- <b-field :label="$tc('globals.terms.messenger')" label-position="on-border">
                   <b-select :placeholder="$tc('globals.terms.messenger')" v-model="form.messenger" name="messenger"
-                    :disabled="!canEdit" required>
+                    :disabled="!canEdit" required multiple :select-size="2">
                     <option v-for="m in messengers" :value="m" :key="m">
                       {{ m }}
                     </option>
                   </b-select>
-                </b-field>
+                </b-field> -->
 
                 <b-field :label="$t('globals.terms.tags')" label-position="on-border">
                   <b-taginput v-model="form.tags" name="tags" :disabled="!canEdit" ellipsis icon="tag-outline"
@@ -342,6 +378,13 @@ export default Vue.extend({
       isAttachModalOpen: false,
       activeTab: 'campaign',
 
+      // Tracks checkbox states
+      selectedStates: {},
+      // Tracks number input values
+      itemValues: {},
+      showError: false,
+      submitted: false,
+
       data: {},
 
       // IDs from ?list_id query param.
@@ -433,6 +476,17 @@ export default Vue.extend({
     },
 
     onSubmit(typ) {
+      if (this.selectedMessengers.length === 0) {
+        this.showError = true;
+        return;
+      }
+
+      const outofbound = this.selectedMessengers.find((x) => !x.value || x.value < 1 || x.value > 1000);
+      if (outofbound) {
+        this.showError = true;
+        return;
+      }
+
       // Validate custom JSON headers.
       if (this.form.headersStr && this.form.headersStr !== '[]') {
         try {
@@ -529,13 +583,18 @@ export default Vue.extend({
     },
 
     createCampaign() {
+      const selectedMessengers = this.selectedMessengers.map((x) => {
+        const item = { weight: x.value, name: x.label };
+        return item;
+      });
+
       const data = {
         archiveSlug: this.form.subject,
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
         content_type: 'richtext',
-        messenger: this.form.messenger,
+        messengers: selectedMessengers,
         type: 'regular',
         tags: this.form.tags,
         send_later: this.form.sendLater,
@@ -547,6 +606,7 @@ export default Vue.extend({
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
         run_type: this.form.runType || 'list',
+        traffic: this.form.traffic || 'split',
         // body: this.form.body,
       };
 
@@ -557,12 +617,17 @@ export default Vue.extend({
     },
 
     async updateCampaign(typ) {
+      const selectedMessengers = this.selectedMessengers.map((x) => {
+        const item = { weight: x.value, name: x.label };
+        return item;
+      });
+
       const data = {
         archive_slug: this.form.archiveSlug,
         name: this.form.name,
         subject: this.form.subject,
         lists: this.form.lists.map((l) => l.id),
-        messenger: this.form.messenger,
+        messengers: selectedMessengers,
         type: 'regular',
         tags: this.form.tags,
         send_later: this.form.sendLater,
@@ -580,6 +645,7 @@ export default Vue.extend({
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
         run_type: this.form.runType || 'list',
+        traffic: this.form.traffic || 'split',
       };
 
       let typMsg = 'globals.messages.updated';
@@ -694,9 +760,20 @@ export default Vue.extend({
 
       return this.lists.results.filter((l) => this.selListIDs.indexOf(l.id) > -1);
     },
-
     messengers() {
-      return [...this.serverConfig.messengers];
+      return this.serverConfig.messengers.map((name, idx) => {
+        const item = {
+          id: idx,
+          selected: this.selectedStates[idx] || false,
+          label: name,
+          value: this.itemValues[idx] || 1,
+        };
+
+        return item;
+      });
+    },
+    selectedMessengers() {
+      return this.messengers.filter((item) => item.selected);
     },
   },
 
@@ -747,7 +824,7 @@ export default Vue.extend({
     this.$api.getTemplates().then((data) => {
       if (data.length > 0) {
         if (!this.form.templateId) {
-          this.form.templateId = data.find((i) => i.isDefault === true).id;
+          this.form.templateId = data.find((i) => i.isDefault === true)?.id || data[0]?.id;
         }
       }
     });
