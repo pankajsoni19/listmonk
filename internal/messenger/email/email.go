@@ -59,6 +59,7 @@ func (s Server) makeChooser() *weightedrand.Chooser[string, int] {
 
 // Server represents an SMTP server's credentials.
 type Server struct {
+	UUID          string            `json:"uuid"`
 	Name          string            `json:"name"`
 	Username      string            `json:"username"`
 	Password      string            `json:"password"`
@@ -129,6 +130,10 @@ func New(s Server) (*Emailer, error) {
 // Name returns the Server's name.
 func (e *Emailer) Name() string {
 	return e.server.Name
+}
+
+func (e *Emailer) UUID() string {
+	return e.server.UUID
 }
 
 func (e *Emailer) IsDefault() bool {

@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,6 +14,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/knadh/listmonk/internal/i18n"
 	"github.com/knadh/listmonk/models"
+	"github.com/mroth/weightedrand/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -45,6 +47,7 @@ type Store interface {
 // Messenger is an interface for a generic messaging backend,
 // for instance, e-mail, SMS etc.
 type Messenger interface {
+	UUID() string
 	Name() string
 	Push(models.Message) error
 	Flush() error
@@ -97,13 +100,14 @@ type CampaignMessage struct {
 	Campaign   *models.Campaign
 	Subscriber models.Subscriber
 
-	to       string
-	subject  string
-	body     []byte
-	altBody  []byte
-	unsubURL string
-
-	pipe *pipe
+	to        string
+	subject   string
+	body      []byte
+	altBody   []byte
+	unsubURL  string
+	messenger string
+	hasMore   bool
+	pipe      *pipe
 }
 
 // Config has parameters for configuring the manager.
@@ -198,23 +202,61 @@ func (m *Manager) PushMessage(msg models.Message) error {
 	return nil
 }
 
+func (m *Manager) parseCampMessengers(c *models.Campaign) (
+	[]string, *weightedrand.Chooser[string, int], error,
+) {
+	choices := make([]weightedrand.Choice[string, int], 0)
+	weightedMessengers := make([]*models.CampaignMessenger, 0)
+	messengers := make([]string, 0)
+
+	if e := json.Unmarshal([]byte(c.Messenger), &weightedMessengers); e != nil {
+		m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
+		return nil, nil, fmt.Errorf("unknown messenger %s on campaign %s", c.Messenger, c.Name)
+	}
+
+	for _, wmessenger := range weightedMessengers {
+		if _, ok := m.messengers[wmessenger.Name]; !ok {
+			m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
+			return nil, nil, fmt.Errorf("unknown messenger %s on campaign %s", wmessenger.Name, c.Name)
+		}
+
+		choices = append(choices, weightedrand.Choice[string, int]{
+			Item:   wmessenger.Name,
+			Weight: wmessenger.Weight,
+		})
+
+		messengers = append(messengers, wmessenger.Name)
+	}
+
+	chooser, _ := weightedrand.NewChooser(choices...)
+
+	return messengers, chooser, nil
+}
+
 // PushCampaignMessage pushes a campaign messages into a queue to be sent out by the workers.
 // It times out if the queue is busy.
 func (m *Manager) PushCampaignMessage(msg CampaignMessage) error {
-	t := time.NewTicker(pushTimeout)
-	defer t.Stop()
-
 	// Load any media/attachments.
 	if err := m.attachMedia(msg.Campaign); err != nil {
 		return err
 	}
 
-	select {
-	case m.campMsgQ <- msg:
-	case <-t.C:
-		m.log.Printf("message push timed out: '%s'", msg.Subject())
-		return errors.New("message push timed out")
+	messengers, chooser, err := m.parseCampMessengers(msg.Campaign)
+
+	if err != nil {
+		return err
 	}
+
+	if msg.Campaign.TrafficType == "split" {
+		msg.messenger = chooser.Pick()
+		m.campMsgQ <- msg
+	} else {
+		for _, msgnr := range messengers {
+			msg.messenger = msgnr
+			m.campMsgQ <- msg
+		}
+	}
+
 	return nil
 }
 
@@ -493,7 +535,9 @@ func (m *Manager) worker() {
 
 			// If the campaign has ended, ignore the message.
 			if msg.pipe != nil && msg.pipe.stopped.Load() {
-				msg.pipe.wg.Done()
+				if !msg.hasMore {
+					msg.pipe.wg.Done()
+				}
 				continue
 			}
 
@@ -537,7 +581,7 @@ func (m *Manager) worker() {
 
 			out.Headers = h
 
-			err := m.messengers[msg.Campaign.Messenger].Push(out)
+			err := m.messengers[msg.messenger].Push(out)
 			if err != nil {
 				m.log.Printf("error sending message in campaign %s: subscriber %d: %v", msg.Campaign.Name, msg.Subscriber.ID, err)
 			}
@@ -545,7 +589,9 @@ func (m *Manager) worker() {
 			// Increment the send rate or the error counter if there was an error.
 			if msg.pipe != nil {
 				// Mark the message as done.
-				msg.pipe.wg.Done()
+				if !msg.hasMore {
+					msg.pipe.wg.Done()
+				}
 
 				if err != nil {
 					msg.pipe.OnError()

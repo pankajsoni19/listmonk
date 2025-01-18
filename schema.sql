@@ -11,6 +11,7 @@ DROP TYPE IF EXISTS user_type CASCADE; CREATE TYPE user_type AS ENUM ('user', 'a
 DROP TYPE IF EXISTS user_status CASCADE; CREATE TYPE user_status AS ENUM ('enabled', 'disabled');
 DROP TYPE IF EXISTS role_type CASCADE; CREATE TYPE role_type AS ENUM ('user', 'list');
 DROP TYPE IF EXISTS campaign_run_type CASCADE; CREATE TYPE campaign_run_type AS ENUM ('list', 'event:sub');
+DROP TYPE IF EXISTS campaign_traffic_type CASCADE; CREATE TYPE campaign_traffic_type AS ENUM ('split', 'duplicate');
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -121,6 +122,7 @@ CREATE TABLE campaigns (
 
     -- campaign run type
     run_type                    campaign_run_type NOT NULL DEFAULT 'list',
+    traffic_type                campaign_traffic_type NOT NULL DEFAULT 'split';
 
     -- Publishing.
     archive             BOOLEAN NOT NULL DEFAULT false,

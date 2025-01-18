@@ -23,6 +23,12 @@ I tagged it to db schema version, and will follow that as semver. Current `5.3.0
 - From is moved into smtp, messenger config.
 - Sample -> `One <one@example.com>,10,Two <two@value.com>,5`. This will send based on weights assigned. Can be phone number for messenger.
 
+##### Multi messenger send weighted
+
+- Can send to multiple channels at once
+- traffic can be split based on weights or duplicated on all channels
+- For duplicating traffic sliding window limiter counts campaign subscriber triggered not messengers triggered per subscriber.
+
 ##### Per Campaign smtp/messenger
 
 - In `Settings`>`SMTP` config specify a name.

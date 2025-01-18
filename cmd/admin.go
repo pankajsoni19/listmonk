@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"syscall"
 	"time"
 
@@ -12,15 +11,15 @@ import (
 )
 
 type serverConfig struct {
-	RootURL       string          `json:"root_url"`
-	Messengers    []string        `json:"messengers"`
-	Langs         []i18nLang      `json:"langs"`
-	Lang          string          `json:"lang"`
-	Permissions   json.RawMessage `json:"permissions"`
-	Update        *AppUpdate      `json:"update"`
-	NeedsRestart  bool            `json:"needs_restart"`
-	HasLegacyUser bool            `json:"has_legacy_user"`
-	Version       string          `json:"version"`
+	RootURL       string                   `json:"root_url"`
+	Messengers    []map[string]interface{} `json:"messengers"`
+	Langs         []i18nLang               `json:"langs"`
+	Lang          string                   `json:"lang"`
+	Permissions   json.RawMessage          `json:"permissions"`
+	Update        *AppUpdate               `json:"update"`
+	NeedsRestart  bool                     `json:"needs_restart"`
+	HasLegacyUser bool                     `json:"has_legacy_user"`
+	Version       string                   `json:"version"`
 }
 
 // handleGetServerConfig returns general server config.
@@ -45,13 +44,15 @@ func handleGetServerConfig(c echo.Context) error {
 	out.Langs = langList
 
 	// Sort messenger names with `email` always as the first item.
-	var names []string
-	for name := range app.messengers {
-		names = append(names, name)
+	messengers := make([]map[string]interface{}, 0)
+	for _, v := range app.messengers {
+		messengers = append(messengers, map[string]interface{}{
+			"name": v.Name(),
+			"uuid": v.UUID(),
+		})
 	}
 
-	sort.Strings(names)
-	out.Messengers = names
+	out.Messengers = messengers
 
 	app.Lock()
 	out.NeedsRestart = app.needsRestart

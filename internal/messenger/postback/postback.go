@@ -53,6 +53,7 @@ type attachment struct {
 
 // Options represents HTTP Postback server options.
 type Options struct {
+	UUID     string        `json:"uuid"`
 	Name     string        `json:"name"`
 	Username string        `json:"username"`
 	Password string        `json:"password"`
@@ -136,6 +137,10 @@ func New(o Options) (*Postback, error) {
 // Name returns the messenger's name.
 func (p *Postback) Name() string {
 	return p.o.Name
+}
+
+func (p *Postback) UUID() string {
+	return p.o.UUID
 }
 
 func (p *Postback) IsDefault() bool {
