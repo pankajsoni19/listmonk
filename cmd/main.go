@@ -229,7 +229,7 @@ func main() {
 
 	// Initialize the default SMTP (`email`) messenger.
 	for _, m := range initSMTPMessengers() {
-		app.messengers[m.Name()] = m
+		app.messengers[m.UUID()] = m
 		if m.IsDefault() {
 			app.defaultMessenger = m
 		}
@@ -244,7 +244,7 @@ func main() {
 
 	// Initialize any additional postback messengers.
 	for _, m := range initPostbackMessengers() {
-		app.messengers[m.Name()] = m
+		app.messengers[m.UUID()] = m
 	}
 
 	// Attach all messengers to the campaign manager.

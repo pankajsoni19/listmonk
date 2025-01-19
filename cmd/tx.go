@@ -120,13 +120,21 @@ func handleSendTxMessage(c echo.Context) error {
 				app.i18n.Ts("globals.messages.errorFetching", "name"))
 		}
 
+		var muid string
+		for _, v := range app.messengers {
+			if m.Messenger == v.Name() || m.Messenger == v.UUID() {
+				muid = v.UUID()
+				break
+			}
+		}
+
 		// Prepare the final message.
 		msg := models.Message{}
 		msg.Subscriber = sub
 		msg.To = []string{sub.Email}
 		msg.Subject = m.Subject
 		msg.ContentType = m.ContentType
-		msg.Messenger = m.Messenger
+		msg.Messenger = muid
 		msg.Body = m.Body
 		for _, a := range m.Attachments {
 			msg.Attachments = append(msg.Attachments, models.Attachment{

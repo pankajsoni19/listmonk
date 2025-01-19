@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/models"
-	"github.com/mroth/weightedrand/v2"
 )
 
 // postback is the payload that's posted as JSON to the HTTP Postback server.
@@ -66,13 +66,14 @@ type Options struct {
 
 // Postback represents an HTTP Message server.
 type Postback struct {
-	authStr string
-	o       Options
-	c       *http.Client
-	chooser *weightedrand.Chooser[string, int]
+	authStr  string
+	o        Options
+	c        *http.Client
+	balancer *balancer.Balance
 }
 
-func (o Options) makeChooser() *weightedrand.Chooser[string, int] {
+func (o Options) makeBalancer() *balancer.Balance {
+	// copied from email
 	parts := strings.Split(o.WFrom, ",")
 
 	var lastKey string
@@ -97,17 +98,13 @@ func (o Options) makeChooser() *weightedrand.Chooser[string, int] {
 		lastKey = spart
 	}
 
-	choices := make([]weightedrand.Choice[string, int], 0)
+	balancer := balancer.NewBalance()
+
 	for k, v := range choiceVal {
-		choices = append(choices, weightedrand.Choice[string, int]{
-			Item:   k,
-			Weight: v,
-		})
+		balancer.Add(k, v)
 	}
 
-	chooser, _ := weightedrand.NewChooser(choices...)
-
-	return chooser
+	return balancer
 }
 
 // New returns a new instance of the HTTP Postback messenger.
@@ -130,7 +127,7 @@ func New(o Options) (*Postback, error) {
 				IdleConnTimeout:       o.Timeout,
 			},
 		},
-		chooser: o.makeChooser(),
+		balancer: o.makeBalancer(),
 	}, nil
 }
 
@@ -149,7 +146,7 @@ func (p *Postback) IsDefault() bool {
 
 // Push pushes a message to the server.
 func (p *Postback) Push(m models.Message) error {
-	from := p.chooser.Pick()
+	from := p.balancer.Get()
 
 	pb := postback{
 		FromEmail:   from,

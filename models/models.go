@@ -49,6 +49,9 @@ const (
 	CampaignContentTypeMarkdown = "markdown"
 	CampaignContentTypePlain    = "plain"
 
+	CampaignTrafficTypeSplit     = "split"
+	CampaignTrafficTypeDuplicate = "duplicate"
+
 	// List.
 	ListTypePrivate = "private"
 	ListTypePublic  = "public"

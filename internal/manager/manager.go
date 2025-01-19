@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/internal/i18n"
 	"github.com/knadh/listmonk/models"
-	"github.com/mroth/weightedrand/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -179,7 +179,7 @@ func New(cfg Config, store Store, notifCB models.AdminNotifCallback, i *i18n.I18
 
 // AddMessenger adds a Messenger messaging backend to the manager.
 func (m *Manager) AddMessenger(msg Messenger) error {
-	id := msg.Name()
+	id := msg.UUID()
 	if _, ok := m.messengers[id]; ok {
 		return fmt.Errorf("messenger '%s' is already loaded", id)
 	}
@@ -203,34 +203,28 @@ func (m *Manager) PushMessage(msg models.Message) error {
 }
 
 func (m *Manager) parseCampMessengers(c *models.Campaign) (
-	[]string, *weightedrand.Chooser[string, int], error,
+	*balancer.Balance, error,
 ) {
-	choices := make([]weightedrand.Choice[string, int], 0)
+
 	weightedMessengers := make([]*models.CampaignMessenger, 0)
-	messengers := make([]string, 0)
 
 	if e := json.Unmarshal([]byte(c.Messenger), &weightedMessengers); e != nil {
 		m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
-		return nil, nil, fmt.Errorf("unknown messenger %s on campaign %s", c.Messenger, c.Name)
+		return nil, fmt.Errorf("unknown messenger %s on campaign %s", c.Messenger, c.Name)
 	}
+
+	balancer := balancer.NewBalance()
 
 	for _, wmessenger := range weightedMessengers {
-		if _, ok := m.messengers[wmessenger.Name]; !ok {
+		if _, ok := m.messengers[wmessenger.UUID]; !ok {
 			m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
-			return nil, nil, fmt.Errorf("unknown messenger %s on campaign %s", wmessenger.Name, c.Name)
+			return nil, fmt.Errorf("unknown messenger %s on campaign %s", wmessenger.Name, c.Name)
 		}
 
-		choices = append(choices, weightedrand.Choice[string, int]{
-			Item:   wmessenger.Name,
-			Weight: wmessenger.Weight,
-		})
-
-		messengers = append(messengers, wmessenger.Name)
+		balancer.Add(wmessenger.UUID, wmessenger.Weight)
 	}
 
-	chooser, _ := weightedrand.NewChooser(choices...)
-
-	return messengers, chooser, nil
+	return balancer, nil
 }
 
 // PushCampaignMessage pushes a campaign messages into a queue to be sent out by the workers.
@@ -241,17 +235,17 @@ func (m *Manager) PushCampaignMessage(msg CampaignMessage) error {
 		return err
 	}
 
-	messengers, chooser, err := m.parseCampMessengers(msg.Campaign)
+	balancer, err := m.parseCampMessengers(msg.Campaign)
 
 	if err != nil {
 		return err
 	}
 
-	if msg.Campaign.TrafficType == "split" {
-		msg.messenger = chooser.Pick()
+	if msg.Campaign.TrafficType == models.CampaignTrafficTypeSplit {
+		msg.messenger = balancer.Get()
 		m.campMsgQ <- msg
 	} else {
-		for _, msgnr := range messengers {
+		for _, msgnr := range balancer.All() {
 			msg.messenger = msgnr
 			m.campMsgQ <- msg
 		}
@@ -487,7 +481,7 @@ func (m *Manager) scanCampaigns(tick time.Duration) {
 func (m *Manager) QueueForSubAndList(subIDs, listIDs []int) {
 	campaigns, e := m.store.GetCampaignsForListsRunType(listIDs, "event:sub")
 	if e != nil {
-		fmt.Println(e)
+		m.log.Printf("error QueueForSubAndList: event:sub (%v): %v", listIDs, e)
 		return
 	}
 
