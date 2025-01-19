@@ -73,6 +73,7 @@ type Postback struct {
 }
 
 func (o Options) makeBalancer() *balancer.Balance {
+	// copied from email
 	parts := strings.Split(o.WFrom, ",")
 
 	var lastKey string

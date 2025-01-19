@@ -26,7 +26,6 @@ type pipe struct {
 	SlidingWindowDuration time.Duration
 	slidingCount          int
 	balancer              *balancer.Balance
-	messengers            []string
 	totalMessengers       int
 }
 
@@ -44,7 +43,7 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 
 	dur, _ := time.ParseDuration(c.SlidingWindowDuration)
 
-	messengers, balancer, err := m.parseCampMessengers(c)
+	balancer, err := m.parseCampMessengers(c)
 
 	if err != nil {
 		return nil, err
@@ -60,8 +59,7 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 		SlidingWindowDuration: dur,
 		slidingCount:          0,
 		balancer:              balancer,
-		messengers:            messengers,
-		totalMessengers:       len(messengers),
+		totalMessengers:       len(balancer.All()),
 	}
 
 	// Increment the waitgroup so that Wait() blocks immediately. This is necessary
@@ -135,7 +133,7 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 			p.m.campMsgQ <- msg
 		} else {
 			// duplicate type, send to all messengers
-			for idx, messenger := range p.messengers {
+			for idx, messenger := range p.balancer.All() {
 				msg.messenger = messenger
 				msg.hasMore = (idx < (p.totalMessengers - 1))
 				p.m.campMsgQ <- msg

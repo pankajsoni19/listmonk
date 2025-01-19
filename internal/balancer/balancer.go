@@ -30,6 +30,8 @@ type Balance struct {
 	next *item
 
 	mutex *sync.RWMutex
+
+	ids []string
 }
 
 // NewBalance creates a new load balancer.
@@ -56,7 +58,13 @@ func (b *Balance) Add(id string, weight int) *Balance {
 		current: 0,
 	})
 
+	b.ids = append(b.ids, id)
+
 	return b
+}
+
+func (b *Balance) All() []string {
+	return b.ids
 }
 
 func (b *Balance) Get() string {
