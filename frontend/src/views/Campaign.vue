@@ -106,10 +106,10 @@
                       <div style="display: flex; flex-direction: column;">
                         <div v-for="(item, index) in messengers" :key="index" style="display: flex; flex-direction: row; margin-top: 24px;">
                           <div style="min-width: 192px;align-content: center;">
-                            <b-checkbox v-model="selectedStates[item.name]" :disabled="!canEditWindow">{{ item.name }}</b-checkbox>
+                            <b-checkbox v-model="selectedStates[item.uuid]" :disabled="!canEditWindow">{{ item.name }}</b-checkbox>
                           </div>
                           <b-field label="Weight" label-position="on-border" :hidden="form.trafficType == 'duplicate'">
-                            <b-input :maxlength="2" :max="10" :min="1" placeholder="Weight..." style="width: 108px;" v-model="itemValues[item.name]" :disabled="!canEditWindow" />
+                            <b-input :maxlength="2" :max="10" :min="1" placeholder="Weight..." style="width: 108px;" v-model="itemValues[item.uuid]" :disabled="!canEditWindow" />
                           </b-field>
                         </div>
                       </div>
@@ -469,13 +469,13 @@ export default Vue.extend({
       this.form.archiveMetaStr = this.$utils.getPref('campaign.archiveMetaStr') || JSON.stringify(JSON.parse(archiveStr), null, 4);
     },
     selectedMessengers() {
-      const filtered = this.messengers.filter((item) => this.selectedStates[item.name]);
+      const filtered = this.messengers.filter((item) => this.selectedStates[item.uuid]);
 
       return filtered.map((item) => {
         const mrow = {
           uuid: item.uuid,
           name: item.name,
-          weight: parseInt(this.itemValues[item.name], 10) || 1,
+          weight: parseInt(this.itemValues[item.uuid], 10) || 1,
         };
 
         return mrow;
@@ -549,8 +549,8 @@ export default Vue.extend({
         console.log('init', JSON.stringify(this.selectedStates), JSON.stringify(this.itemValues));
 
         JSON.parse(data.messenger).forEach((m) => {
-          this.selectedStates[m.name] = true;
-          this.itemValues[m.name] = m.weight;
+          this.selectedStates[m.uuid] = true;
+          this.itemValues[m.uuid] = m.weight;
         });
 
         console.log('updated', JSON.stringify(this.selectedStates), JSON.stringify(this.itemValues));
