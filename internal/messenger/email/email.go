@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/models"
 	"github.com/knadh/smtppool"
-	"github.com/mroth/weightedrand/v2"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	hdrCc         = "Cc"
 )
 
-func (s Server) makeChooser() *weightedrand.Chooser[string, int] {
+func (s Server) makeBalancer() *balancer.Balance {
 	parts := strings.Split(s.WFrom, ",")
 
 	var lastKey string
@@ -44,17 +44,13 @@ func (s Server) makeChooser() *weightedrand.Chooser[string, int] {
 		lastKey = spart
 	}
 
-	choices := make([]weightedrand.Choice[string, int], 0)
+	balancer := balancer.NewBalance()
+
 	for k, v := range choiceVal {
-		choices = append(choices, weightedrand.Choice[string, int]{
-			Item:   k,
-			Weight: v,
-		})
+		balancer.Add(k, v)
 	}
 
-	chooser, _ := weightedrand.NewChooser(choices...)
-
-	return chooser
+	return balancer
 }
 
 // Server represents an SMTP server's credentials.
@@ -79,8 +75,8 @@ type Server struct {
 
 // Emailer is the SMTP e-mail messenger.
 type Emailer struct {
-	server  *Server
-	chooser *weightedrand.Chooser[string, int]
+	server   *Server
+	balancer *balancer.Balance
 }
 
 // New returns an SMTP e-mail Messenger backend with the given SMTP servers.
@@ -120,8 +116,8 @@ func New(s Server) (*Emailer, error) {
 	s.pool = pool
 
 	e := &Emailer{
-		server:  &s,
-		chooser: s.makeChooser(),
+		server:   &s,
+		balancer: s.makeBalancer(),
 	}
 
 	return e, nil
@@ -162,7 +158,7 @@ func (e *Emailer) Push(m models.Message) error {
 	}
 
 	em := smtppool.Email{
-		From:        e.chooser.Pick(),
+		From:        e.balancer.Get(),
 		To:          m.To,
 		Subject:     m.Subject,
 		Attachments: files,

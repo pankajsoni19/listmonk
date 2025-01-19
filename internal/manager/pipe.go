@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/models"
-	"github.com/mroth/weightedrand/v2"
 	"github.com/paulbellamy/ratecounter"
 )
 
@@ -25,7 +25,7 @@ type pipe struct {
 	slidingStart          time.Time
 	SlidingWindowDuration time.Duration
 	slidingCount          int
-	chooser               *weightedrand.Chooser[string, int]
+	balancer              *balancer.Balance
 	messengers            []string
 	totalMessengers       int
 }
@@ -44,7 +44,7 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 
 	dur, _ := time.ParseDuration(c.SlidingWindowDuration)
 
-	messengers, chooser, err := m.parseCampMessengers(c)
+	messengers, balancer, err := m.parseCampMessengers(c)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (m *Manager) newPipe(c *models.Campaign) (*pipe, error) {
 		slidingStart:          time.Now(),
 		SlidingWindowDuration: dur,
 		slidingCount:          0,
-		chooser:               chooser,
+		balancer:              balancer,
 		messengers:            messengers,
 		totalMessengers:       len(messengers),
 	}
@@ -128,9 +128,9 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 
 		// Push the message to the queue while blocking and waiting until
 		// the queue is drained.
-		if p.camp.TrafficType == "split" {
+		if p.camp.TrafficType == models.CampaignTrafficTypeSplit {
 			// decide messanger and queue message
-			msg.messenger = p.chooser.Pick()
+			msg.messenger = p.balancer.Get()
 			msg.hasMore = false
 			p.m.campMsgQ <- msg
 		} else {

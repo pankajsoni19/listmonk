@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/internal/i18n"
 	"github.com/knadh/listmonk/models"
-	"github.com/mroth/weightedrand/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -203,9 +203,11 @@ func (m *Manager) PushMessage(msg models.Message) error {
 }
 
 func (m *Manager) parseCampMessengers(c *models.Campaign) (
-	[]string, *weightedrand.Chooser[string, int], error,
+	[]string, *balancer.Balance, error,
 ) {
-	choices := make([]weightedrand.Choice[string, int], 0)
+
+	balancer := balancer.NewBalance()
+
 	weightedMessengers := make([]*models.CampaignMessenger, 0)
 	messengers := make([]string, 0)
 
@@ -220,17 +222,12 @@ func (m *Manager) parseCampMessengers(c *models.Campaign) (
 			return nil, nil, fmt.Errorf("unknown messenger %s on campaign %s", wmessenger.Name, c.Name)
 		}
 
-		choices = append(choices, weightedrand.Choice[string, int]{
-			Item:   wmessenger.Name,
-			Weight: wmessenger.Weight,
-		})
+		balancer.Add(wmessenger.Name, wmessenger.Weight)
 
 		messengers = append(messengers, wmessenger.Name)
 	}
 
-	chooser, _ := weightedrand.NewChooser(choices...)
-
-	return messengers, chooser, nil
+	return messengers, balancer, nil
 }
 
 // PushCampaignMessage pushes a campaign messages into a queue to be sent out by the workers.
@@ -241,14 +238,14 @@ func (m *Manager) PushCampaignMessage(msg CampaignMessage) error {
 		return err
 	}
 
-	messengers, chooser, err := m.parseCampMessengers(msg.Campaign)
+	messengers, balancer, err := m.parseCampMessengers(msg.Campaign)
 
 	if err != nil {
 		return err
 	}
 
-	if msg.Campaign.TrafficType == "split" {
-		msg.messenger = chooser.Pick()
+	if msg.Campaign.TrafficType == models.CampaignTrafficTypeSplit {
+		msg.messenger = balancer.Get()
 		m.campMsgQ <- msg
 	} else {
 		for _, msgnr := range messengers {
