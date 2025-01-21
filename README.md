@@ -1,4 +1,4 @@
-## About
+# About
 
 ![Docker](https://github.com/pankajsoni19/listmonk/actions/workflows/build.yml/badge.svg)
 
@@ -6,60 +6,56 @@ This is a forked repo from `v4.1.0` upstream. It maintains compatibility with up
 
 Visit [listmonk.app](https://listmonk.app) for more info.
 
-#### Changes from upstream
+## Changes
 
-I tagged it to db schema version, and will follow that as semver. Current `5.3.0`
+I tagged it to db schema version, and will follow that as semver.
 
-##### Long running campaigns
+[![alt text](.github/images/shot1.png)]
+
+### Event based campaigns
 
 - When creating campaign choose run type as `Event Subscription`
 - Supported via
   - Modify subscriber list memberships -> `/api/subscribers/lists`
   - Create a new subscriber -> `/api/subscribers`
-- If no new message, worker will sleep for 1 minute before querying
 
-##### Weighted From
+### Weighted From
 
-- From is moved into smtp, messenger config.
 - Sample -> `One <one@example.com>,10,Two <two@value.com>,5`. This will send based on weights assigned. Can be phone number for messenger.
 
-##### Multi messenger send weighted
+### Per Campaign smtp/messenger multiple wieghted messenger
 
 - Can send to multiple channels at once
 - traffic can be split based on weights or duplicated on all channels
 - For duplicating traffic sliding window limiter counts campaign subscriber triggered not messengers triggered per subscriber.
 
-##### Per Campaign smtp/messenger
+### Settings
 
-- In `Settings`>`SMTP` config specify a name.
-- In create/update campaign specify same name.
-- It will use that messenger to send outbound event.
-- Specify a `default`, if none specified picks first. It is used to send system alert emails.
+- Tag 1 smtp as `default`, else random. It is used to send system alert emails.
 
-##### Query list by exact name
+### Query list by exact name
 
 - `/api/lists` specify `?name=` for exact lookup. Specify multiple times to search multiple
 
-##### Per Campaign `Sliding window limit`
+### Per Campaign `Sliding window limit`
 
 - Config added to create/update campaign UI
 - Config is removed from `Settings`>`Performance`. On upgrade this is copied to all campaigns.
 - Allows setting limit per campaign per endpoint.
 
-##### Cloning of lists
+### Cloning of lists
 
 - Cloning action button on lists page. It copies all config, subscribers to the new list.
 
-##### Bug fixes
+### Bug fixes
 
 - Campaign pause/stop.
   - Though stopped on UI, it used to run in bg over the last fetched subscriber list and loop stops quite late.
   - Server config change forces a restart so the delta of unprocessed subscribers get lost.
 
-##### Default data
+### Default data
 
 - Skips default data creation for list, template, campaigns on install.
-- check_updates is false
 
 ## Installation
 
