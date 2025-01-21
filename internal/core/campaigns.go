@@ -306,13 +306,14 @@ func (c *Core) UpdateCampaignStatus(id int, status string) (models.Campaign, err
 	return cm, nil
 }
 
-func (c *Core) UpdateCampaignWindow(
+func (c *Core) UpdateCampaignPaused(
 	id int,
 	slidingWindowEnabled bool,
 	slidingWindowRate int,
 	slidingWindowDuration string,
+	messenger string,
 ) error {
-	if _, err := c.q.UpdateCampaignWindow.Exec(id, slidingWindowEnabled, slidingWindowRate, slidingWindowDuration); err != nil {
+	if _, err := c.q.UpdateCampaignPaused.Exec(id, slidingWindowEnabled, slidingWindowRate, slidingWindowDuration, messenger); err != nil {
 		c.log.Printf("error updating campaign: %v", err)
 
 		return echo.NewHTTPError(http.StatusInternalServerError,

@@ -339,8 +339,8 @@ func handleUpdateCampaignArchive(c echo.Context) error {
 	return c.JSON(http.StatusOK, okResp{req})
 }
 
-// handleUpdateCampaignWindow handles campaign window modification
-func handleUpdateCampaignWindow(c echo.Context) error {
+// handleUpdateCampaignPaused handles campaign update in paused state
+func handleUpdateCampaignPaused(c echo.Context) error {
 	var (
 		app   = c.Get("app").(*App)
 		id, _ = strconv.Atoi(c.Param("id"))
@@ -350,6 +350,7 @@ func handleUpdateCampaignWindow(c echo.Context) error {
 		SlidingWindow         bool   `json:"sliding_window"`
 		SlidingWindowRate     int    `json:"sliding_window_rate"`
 		SlidingWindowDuration string `json:"sliding_window_duration"`
+		Messenger             string `json:"messenger"`
 	}{}
 
 	// Get and validate fields.
@@ -357,7 +358,7 @@ func handleUpdateCampaignWindow(c echo.Context) error {
 		return err
 	}
 
-	if err := app.core.UpdateCampaignWindow(id, req.SlidingWindow, req.SlidingWindowRate, req.SlidingWindowDuration); err != nil {
+	if err := app.core.UpdateCampaignPaused(id, req.SlidingWindow, req.SlidingWindowRate, req.SlidingWindowDuration, req.Messenger); err != nil {
 		return err
 	}
 

@@ -764,7 +764,7 @@ export default Vue.extend({
           break;
         default:
           if (this.data.status === 'paused') {
-            this.updateCampaignWindow();
+            this.updateCampaignPaused();
           } else {
             this.updateCampaign();
           }
@@ -912,7 +912,7 @@ export default Vue.extend({
       });
     },
 
-    async updateCampaignWindow() {
+    async updateCampaignPaused() {
       const data = {
         sliding_window: this.form.slidingWindow,
         sliding_window_rate: this.form.slidingWindowRate || 1,
@@ -922,7 +922,7 @@ export default Vue.extend({
       const typMsg = 'globals.messages.updated';
 
       return new Promise((resolve) => {
-        this.$api.updateCampaignWindow(this.data.id, data).then(() => {
+        this.$api.updateCampaignPaused(this.data.id, data).then(() => {
           this.$utils.toast(this.$t(typMsg, { name: this.data.name }));
           resolve();
         });

@@ -929,8 +929,8 @@ WHERE id=$1;
 -- name: update-campaign-status
 UPDATE campaigns SET status=$2, updated_at=NOW() WHERE id = $1;
 
--- name: update-campaign-window
-UPDATE campaigns SET sliding_window=$2, sliding_window_rate=$3, sliding_window_duration=$4 WHERE id = $1;
+-- name: update-campaign-paused
+UPDATE campaigns SET sliding_window=$2, sliding_window_rate=$3, sliding_window_duration=$4, messenger=$5 WHERE id = $1;
 
 -- name: update-campaign-archive
 UPDATE campaigns SET
