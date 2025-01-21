@@ -884,38 +884,43 @@ WITH camp AS (
         altbody=(CASE WHEN $5 = '' THEN NULL ELSE $5 END),
         content_type=$6::content_type,
         send_at=$7::TIMESTAMP WITH TIME ZONE,
-        status=(CASE WHEN NOT $8 THEN 'draft' ELSE status END),
-        headers=$9,
-        tags=$10::VARCHAR(100)[],
-        messenger=$11,
-        template_id=$12,
-        archive=$14,
-        archive_slug=$15,
-        archive_template_id=$16,
-        archive_meta=$17,
-        sliding_window=$19,
-        sliding_window_rate=$20,
-        sliding_window_duration=$21,
-        run_type=$22,
-        traffic_type=$23,
+        status=(
+            CASE
+                WHEN status = 'scheduled' AND $7 IS NULL THEN 'draft'
+                ELSE status
+            END
+        ),
+        headers=$8,
+        tags=$9::VARCHAR(100)[],
+        messenger=$10,
+        template_id=$11,
+        archive=$13,
+        archive_slug=$14,
+        archive_template_id=$15,
+        archive_meta=$16,
+        sliding_window=$18,
+        sliding_window_rate=$19,
+        sliding_window_duration=$20,
+        run_type=$21,
+        traffic_type=$22,
         updated_at=NOW()
     WHERE id = $1 RETURNING id
 ),
 clists AS (
     -- Reset list relationships
-    DELETE FROM campaign_lists WHERE campaign_id = $1 AND NOT(list_id = ANY($13))
+    DELETE FROM campaign_lists WHERE campaign_id = $1 AND NOT(list_id = ANY($12))
 ),
 med AS (
     DELETE FROM campaign_media WHERE campaign_id = $1
-    AND ( media_id IS NULL or NOT(media_id = ANY($18))) RETURNING media_id
+    AND ( media_id IS NULL or NOT(media_id = ANY($17))) RETURNING media_id
 ),
 medi AS (
     INSERT INTO campaign_media (campaign_id, media_id, filename)
-        (SELECT $1 AS campaign_id, id, filename FROM media WHERE id=ANY($18::INT[]))
+        (SELECT $1 AS campaign_id, id, filename FROM media WHERE id=ANY($17::INT[]))
         ON CONFLICT (campaign_id, media_id) DO NOTHING
 )
 INSERT INTO campaign_lists (campaign_id, list_id, list_name)
-    (SELECT $1 as campaign_id, id, name FROM lists WHERE id=ANY($13::INT[]))
+    (SELECT $1 as campaign_id, id, name FROM lists WHERE id=ANY($12::INT[]))
     ON CONFLICT (campaign_id, list_id) DO UPDATE SET list_name = EXCLUDED.list_name;
 
 -- name: update-campaign-counts

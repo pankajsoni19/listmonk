@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"net/textproto"
 	"regexp"
 	"strings"
 
@@ -19,15 +20,8 @@ var (
 	reTitle = regexp.MustCompile(`(?s)<title\s*data-i18n\s*>(.+?)</title>`)
 )
 
-// notifData represents params commonly used across different notification
-// templates.
-type notifData struct {
-	RootURL string
-	LogoURL string
-}
-
 // sendNotification sends out an e-mail notification to admins.
-func (app *App) sendNotification(toEmails []string, subject, tplName string, data interface{}) error {
+func (app *App) sendNotification(toEmails []string, subject, tplName string, data interface{}, headers textproto.MIMEHeader) error {
 	if len(toEmails) == 0 {
 		return nil
 	}
@@ -48,6 +42,7 @@ func (app *App) sendNotification(toEmails []string, subject, tplName string, dat
 	m.Body = body
 	m.From = app.defaultMessenger.From()
 	m.Messenger = app.defaultMessenger.UUID()
+	m.Headers = headers
 
 	if err := app.manager.PushMessage(m); err != nil {
 		app.log.Printf("error sending admin notification (%s): %v", subject, err)
