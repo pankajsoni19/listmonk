@@ -128,13 +128,18 @@ func (p *pipe) NextSubscribers(result chan *NextSubResult) {
 		// the queue is drained.
 		if p.camp.TrafficType == models.CampaignTrafficTypeSplit {
 			// decide messanger and queue message
-			msg.messenger = p.balancer.Get()
+			wmf := p.balancer.GetMF()
+			msg.from = wmf.From
+			msg.messenger = wmf.UUID
+			
 			msg.hasMore = false
 			p.m.campMsgQ <- msg
 		} else {
 			// duplicate type, send to all messengers
-			for idx, messenger := range p.balancer.All() {
-				msg.messenger = messenger
+			for idx, wmf := range p.balancer.All() {
+				msg.from = wmf.From
+				msg.messenger = wmf.UUID
+				
 				msg.hasMore = (idx < (p.totalMessengers - 1))
 				p.m.campMsgQ <- msg
 			}

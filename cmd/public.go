@@ -599,6 +599,7 @@ func handleSelfExportSubscriberData(c echo.Context) error {
 	// Send the data as a JSON attachment to the subscriber.
 	const fname = "data.json"
 	if err := app.defaultMessenger.Push(models.Message{
+		From: app.defaultMessenger.From(),
 		ContentType: app.notifTpls.contentType,
 		To:          []string{data.Email},
 		Subject:     subject,

@@ -316,6 +316,7 @@ type CampaignMessenger struct {
 	UUID   string `json:"uuid"`
 	Name   string `json:"name"`
 	Weight int    `json:"weight"`
+	WFrom string `json:"wfrom"`
 }
 
 // Campaign represents an e-mail campaign.
@@ -453,6 +454,7 @@ type Bounce struct {
 
 // Message is the message pushed to a Messenger.
 type Message struct {
+	From 		string
 	To          []string
 	Subject     string
 	ContentType string
@@ -491,6 +493,7 @@ type TxMessage struct {
 	Data        map[string]interface{} `json:"data"`
 	Headers     Headers                `json:"headers"`
 	ContentType string                 `json:"content_type"`
+	From string `json:"from"`
 	Messenger   string                 `json:"messenger"`
 
 	// File attachments added from multi-part form data.

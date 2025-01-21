@@ -8,11 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/textproto"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/models"
 )
 
@@ -61,7 +58,7 @@ type Options struct {
 	MaxConns int           `json:"max_conns"`
 	Retries  int           `json:"retries"`
 	Timeout  time.Duration `json:"timeout"`
-	WFrom    string        `json:"wfrom"`
+	From    string        `json:"from"`
 }
 
 // Postback represents an HTTP Message server.
@@ -69,42 +66,6 @@ type Postback struct {
 	authStr  string
 	o        Options
 	c        *http.Client
-	balancer *balancer.Balance
-}
-
-func (o Options) makeBalancer() *balancer.Balance {
-	// copied from email
-	parts := strings.Split(o.WFrom, ",")
-
-	var lastKey string
-	choiceVal := make(map[string]int)
-
-	for idx, part := range parts {
-		spart := strings.TrimSpace(part)
-
-		if len(parts) == idx+1 && len(spart) == 0 {
-			break
-		}
-
-		if len(lastKey) > 0 {
-			if v, e := strconv.Atoi(spart); e == nil {
-				choiceVal[lastKey] = v
-				lastKey = ""
-				continue
-			}
-		}
-
-		choiceVal[spart] = 1
-		lastKey = spart
-	}
-
-	balancer := balancer.NewBalance()
-
-	for k, v := range choiceVal {
-		balancer.Add(k, v)
-	}
-
-	return balancer
 }
 
 // New returns a new instance of the HTTP Postback messenger.
@@ -127,7 +88,6 @@ func New(o Options) (*Postback, error) {
 				IdleConnTimeout:       o.Timeout,
 			},
 		},
-		balancer: o.makeBalancer(),
 	}, nil
 }
 
@@ -144,12 +104,15 @@ func (p *Postback) IsDefault() bool {
 	return false
 }
 
+func (p *Postback) From() string {
+	return p.o.From
+}
+
 // Push pushes a message to the server.
 func (p *Postback) Push(m models.Message) error {
-	from := p.balancer.Get()
 
 	pb := postback{
-		FromEmail:   from,
+		FromEmail:   m.From,
 		Subject:     m.Subject,
 		ContentType: m.ContentType,
 		Body:        string(m.Body),
@@ -164,7 +127,7 @@ func (p *Postback) Push(m models.Message) error {
 
 	if m.Campaign != nil {
 		pb.Campaign = &campaign{
-			FromEmail: from,
+			FromEmail: m.From,
 			UUID:      m.Campaign.UUID,
 			Name:      m.Campaign.Name,
 			Headers:   m.Campaign.Headers,

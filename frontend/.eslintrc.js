@@ -10,6 +10,7 @@ module.exports = {
     'plugin:vue/essential',
     'plugin:vue/strongly-recommended',
     '@vue/eslint-config-airbnb',
+    'prettier',
   ],
   parser: 'vue-eslint-parser',
   rules: {
@@ -22,10 +23,13 @@ module.exports = {
     'vue/html-indent': 'off',
     'vue/html-closing-bracket-newline': 'off',
     'vue/singleline-html-element-content-newline': 'off',
-    'vue/max-len': ['error', {
-      code: 200,
-      template: 200,
-      comments: 200,
-    }],
+    'vue/max-len': [
+      'error',
+      {
+        code: 200,
+        template: 200,
+        comments: 200,
+      },
+    ],
   },
 };

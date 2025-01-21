@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"net/smtp"
 	"net/textproto"
-	"strconv"
 	"strings"
 
-	"github.com/knadh/listmonk/internal/balancer"
 	"github.com/knadh/listmonk/models"
 	"github.com/knadh/smtppool"
 )
@@ -19,39 +17,7 @@ const (
 	hdrCc         = "Cc"
 )
 
-func (s Server) makeBalancer() *balancer.Balance {
-	parts := strings.Split(s.WFrom, ",")
 
-	var lastKey string
-	choiceVal := make(map[string]int)
-
-	for idx, part := range parts {
-		spart := strings.TrimSpace(part)
-
-		if len(parts) == idx+1 && len(spart) == 0 {
-			break
-		}
-
-		if len(lastKey) > 0 {
-			if v, e := strconv.Atoi(spart); e == nil {
-				choiceVal[lastKey] = v
-				lastKey = ""
-				continue
-			}
-		}
-
-		choiceVal[spart] = 1
-		lastKey = spart
-	}
-
-	balancer := balancer.NewBalance()
-
-	for k, v := range choiceVal {
-		balancer.Add(k, v)
-	}
-
-	return balancer
-}
 
 // Server represents an SMTP server's credentials.
 type Server struct {
@@ -64,7 +30,7 @@ type Server struct {
 	TLSSkipVerify bool              `json:"tls_skip_verify"`
 	EmailHeaders  map[string]string `json:"email_headers"`
 	Default       bool              `json:"default"`
-	WFrom         string            `json:"wfrom"`
+	From         string            `json:"from"`
 
 	// Rest of the options are embedded directly from the smtppool lib.
 	// The JSON tag is for config unmarshal to work.
@@ -76,7 +42,6 @@ type Server struct {
 // Emailer is the SMTP e-mail messenger.
 type Emailer struct {
 	server   *Server
-	balancer *balancer.Balance
 }
 
 // New returns an SMTP e-mail Messenger backend with the given SMTP servers.
@@ -117,7 +82,6 @@ func New(s Server) (*Emailer, error) {
 
 	e := &Emailer{
 		server:   &s,
-		balancer: s.makeBalancer(),
 	}
 
 	return e, nil
@@ -134,6 +98,10 @@ func (e *Emailer) UUID() string {
 
 func (e *Emailer) IsDefault() bool {
 	return e.server.Default
+}
+
+func (e *Emailer) From() string {
+	return e.server.From
 }
 
 // Push pushes a message to the server.
@@ -158,7 +126,7 @@ func (e *Emailer) Push(m models.Message) error {
 	}
 
 	em := smtppool.Email{
-		From:        e.balancer.Get(),
+		From:        m.From,
 		To:          m.To,
 		Subject:     m.Subject,
 		Attachments: files,

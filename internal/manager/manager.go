@@ -49,6 +49,7 @@ type Store interface {
 type Messenger interface {
 	UUID() string
 	Name() string
+	From() string
 	Push(models.Message) error
 	Flush() error
 	Close() error
@@ -100,6 +101,7 @@ type CampaignMessage struct {
 	Campaign   *models.Campaign
 	Subscriber models.Subscriber
 
+	from string
 	to        string
 	subject   string
 	body      []byte
@@ -215,13 +217,13 @@ func (m *Manager) parseCampMessengers(c *models.Campaign) (
 
 	balancer := balancer.NewBalance()
 
-	for _, wmessenger := range weightedMessengers {
-		if _, ok := m.messengers[wmessenger.UUID]; !ok {
+	for _, messenger := range weightedMessengers {
+		if _, ok := m.messengers[messenger.UUID]; !ok {
 			m.store.UpdateCampaignStatus(c.ID, models.CampaignStatusCancelled)
-			return nil, fmt.Errorf("unknown messenger %s on campaign %s", wmessenger.Name, c.Name)
+			return nil, fmt.Errorf("unknown messenger %s on campaign %s", messenger.Name, c.Name)
 		}
 
-		balancer.Add(wmessenger.UUID, wmessenger.Weight)
+		balancer.Add(messenger)
 	}
 
 	return balancer, nil
@@ -242,11 +244,17 @@ func (m *Manager) PushCampaignMessage(msg CampaignMessage) error {
 	}
 
 	if msg.Campaign.TrafficType == models.CampaignTrafficTypeSplit {
-		msg.messenger = balancer.Get()
+		wmf := balancer.GetMF()
+		
+		msg.from = wmf.From
+		msg.messenger = wmf.UUID
+		
 		m.campMsgQ <- msg
 	} else {
-		for _, msgnr := range balancer.All() {
-			msg.messenger = msgnr
+		for _, wmf := range balancer.All() {
+			msg.from = wmf.From
+			msg.messenger = wmf.UUID
+			
 			m.campMsgQ <- msg
 		}
 	}

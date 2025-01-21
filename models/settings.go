@@ -75,7 +75,7 @@ type Settings struct {
 		TLSType       string              `json:"tls_type"`
 		TLSSkipVerify bool                `json:"tls_skip_verify"`
 		Default       bool                `json:"default"`
-		Wfrom         string              `json:"wfrom"`
+		From         string              	`json:"from"`
 	} `json:"smtp"`
 
 	Messengers []struct {
@@ -88,7 +88,7 @@ type Settings struct {
 		MaxConns      int    `json:"max_conns"`
 		Timeout       string `json:"timeout"`
 		MaxMsgRetries int    `json:"max_msg_retries"`
-		Wfrom         string `json:"wfrom"`
+		From         string `json:"from"`
 	} `json:"messengers"`
 
 	BounceEnabled        bool `json:"bounce.enabled"`
