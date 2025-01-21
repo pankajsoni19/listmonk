@@ -968,10 +968,10 @@ export default Vue.extend({
         this.updateCampaign().then(() => {
           // Then start/schedule it.
           let status = '';
-          if (this.canStart) {
-            status = 'running';
-          } else if (this.canSchedule) {
+          if (this.canSchedule) {
             status = 'scheduled';
+          } else if (this.canStart) {
+            status = 'running';
           } else {
             return;
           }
