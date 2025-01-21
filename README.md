@@ -2,7 +2,7 @@
 
 ![Docker](https://github.com/pankajsoni19/listmonk/actions/workflows/build.yml/badge.svg)
 
-This is a forked repo from `v4.1.0` upstream. It maintains compatibility with upstream. It contains these additional work items. Changes are extensive, so most probably wouldnt get merged.
+This is a forked repo from `v4.1.0` upstream. It maintains compatibility with upstream. Changes are extensive, so most probably wouldnt get merged.
 
 Visit [listmonk.app](https://listmonk.app) for more info.
 

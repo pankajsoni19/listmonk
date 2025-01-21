@@ -61,6 +61,18 @@
                 {{ $t('campaigns.schedule') }}
               </b-button>
             </b-field>
+            <b-field expanded v-if="canUnSchedule">
+              <b-button
+                expanded
+                @click="unscheduleCampaign"
+                :loading="loading.campaigns"
+                type="is-primary"
+                icon-left="clock-start"
+                data-cy="btn-unschedule"
+              >
+                {{ $t('campaigns.unSchedule') }}
+              </b-button>
+            </b-field>
           </b-field>
         </div>
       </div>
@@ -850,7 +862,6 @@ export default Vue.extend({
         messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         tags: this.form.tags,
-        send_later: this.form.sendLater,
         send_at: this.form.sendLater ? this.form.sendAtDate : null,
         headers: this.form.headers,
         template_id: this.form.templateId,
@@ -878,7 +889,6 @@ export default Vue.extend({
         messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         tags: this.form.tags,
-        send_later: this.form.sendLater,
         send_at: this.form.sendLater ? this.form.sendAtDate : null,
         headers: this.form.headers,
         template_id: this.form.templateId,
@@ -958,10 +968,10 @@ export default Vue.extend({
         this.updateCampaign().then(() => {
           // Then start/schedule it.
           let status = '';
-          if (this.canStart) {
-            status = 'running';
-          } else if (this.canSchedule) {
+          if (this.canSchedule) {
             status = 'scheduled';
+          } else if (this.canStart) {
+            status = 'running';
           } else {
             return;
           }
@@ -972,13 +982,25 @@ export default Vue.extend({
         });
       });
     },
+
+    unscheduleCampaign() {
+      this.$api.changeCampaignStatus(this.data.id, 'draft').then((d) => {
+        this.data = d;
+        this.form.archiveSlug = d.archiveSlug;
+      });
+    },
   },
 
   computed: {
     ...mapState(['serverConfig', 'loading', 'lists', 'templates']),
 
     canEdit() {
-      return this.isNew || this.data.status === 'draft' || this.data.status === 'scheduled';
+      return (
+        this.isNew ||
+        this.data.status === 'draft' ||
+        this.data.status === 'scheduled' ||
+        this.data.status === 'paused'
+      );
     },
 
     canEditWindow() {
@@ -1006,8 +1028,12 @@ export default Vue.extend({
       return this.data.status === 'draft' && this.data.sendAt;
     },
 
+    canUnSchedule() {
+      return this.data.status === 'scheduled' && this.data.sendAt;
+    },
+
     canStart() {
-      return this.data.status === 'draft' && !this.data.sendAt;
+      return this.data.status === 'draft' || this.data.status === 'paused';
     },
 
     canArchive() {
