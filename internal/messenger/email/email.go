@@ -17,10 +17,9 @@ const (
 	hdrCc         = "Cc"
 )
 
-
-
 // Server represents an SMTP server's credentials.
 type Server struct {
+	From          string            `json:"from"`
 	UUID          string            `json:"uuid"`
 	Name          string            `json:"name"`
 	Username      string            `json:"username"`
@@ -30,7 +29,6 @@ type Server struct {
 	TLSSkipVerify bool              `json:"tls_skip_verify"`
 	EmailHeaders  map[string]string `json:"email_headers"`
 	Default       bool              `json:"default"`
-	From         string            `json:"from"`
 
 	// Rest of the options are embedded directly from the smtppool lib.
 	// The JSON tag is for config unmarshal to work.
@@ -41,7 +39,7 @@ type Server struct {
 
 // Emailer is the SMTP e-mail messenger.
 type Emailer struct {
-	server   *Server
+	server *Server
 }
 
 // New returns an SMTP e-mail Messenger backend with the given SMTP servers.
@@ -81,7 +79,7 @@ func New(s Server) (*Emailer, error) {
 	s.pool = pool
 
 	e := &Emailer{
-		server:   &s,
+		server: &s,
 	}
 
 	return e, nil
@@ -188,6 +186,5 @@ func (e *Emailer) Flush() error {
 // Close closes the SMTP pools.
 func (e *Emailer) Close() error {
 	e.server.pool.Close()
-
 	return nil
 }

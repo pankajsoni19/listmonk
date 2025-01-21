@@ -50,7 +50,7 @@ func NewBalance() *Balance {
 
 func (b *Balance) addWFrom(from string, weight int) *Balance {
 	b.items = append(b.items, &item{
-		id: from,
+		id:     from,
 		weight: weight,
 	})
 
@@ -103,9 +103,9 @@ func (b *Balance) Add(messenger *models.CampaignMessenger) *Balance {
 	}
 
 	item := &item{
-		id:      messenger.UUID,
-		weight:  messenger.Weight,
-		current: 0,
+		id:       messenger.UUID,
+		weight:   messenger.Weight,
+		current:  0,
 		balancer: addWeightedFrom(messenger),
 	}
 
@@ -172,4 +172,3 @@ func (b *Balance) get() *item {
 
 	return max
 }
-

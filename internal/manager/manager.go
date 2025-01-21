@@ -101,7 +101,7 @@ type CampaignMessage struct {
 	Campaign   *models.Campaign
 	Subscriber models.Subscriber
 
-	from string
+	from      string
 	to        string
 	subject   string
 	body      []byte
@@ -139,11 +139,6 @@ type Config struct {
 	// (exposed to the internet, private etc.) where only one does campaign
 	// processing while the others handle other kinds of traffic.
 	ScanCampaigns bool
-}
-
-type msgError struct {
-	st  *pipe
-	err error
 }
 
 var pushTimeout = time.Second * 3
@@ -245,16 +240,16 @@ func (m *Manager) PushCampaignMessage(msg CampaignMessage) error {
 
 	if msg.Campaign.TrafficType == models.CampaignTrafficTypeSplit {
 		wmf := balancer.GetMF()
-		
+
 		msg.from = wmf.From
 		msg.messenger = wmf.UUID
-		
+
 		m.campMsgQ <- msg
 	} else {
 		for _, wmf := range balancer.All() {
 			msg.from = wmf.From
 			msg.messenger = wmf.UUID
-			
+
 			m.campMsgQ <- msg
 		}
 	}
@@ -552,6 +547,7 @@ func (m *Manager) worker() {
 
 			// Outgoing message.
 			out := models.Message{
+				From:        msg.from,
 				To:          []string{msg.to},
 				Subject:     msg.subject,
 				ContentType: msg.Campaign.ContentType,

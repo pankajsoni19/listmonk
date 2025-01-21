@@ -48,6 +48,7 @@ func (app *App) sendNotification(toEmails []string, subject, tplName string, dat
 	m.Body = body
 	m.From = app.defaultMessenger.From()
 	m.Messenger = app.defaultMessenger.UUID()
+
 	if err := app.manager.PushMessage(m); err != nil {
 		app.log.Printf("error sending admin notification (%s): %v", subject, err)
 		return err

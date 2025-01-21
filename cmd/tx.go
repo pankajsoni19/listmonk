@@ -136,14 +136,14 @@ func handleSendTxMessage(c echo.Context) error {
 
 		// Prepare the final message.
 		msg := models.Message{}
-		
+
 		msg.Subscriber = sub
 		msg.To = []string{sub.Email}
 		msg.Subject = m.Subject
 		msg.ContentType = m.ContentType
-		
-		msg.Messenger = messenger.UUID()
+
 		msg.From = from
+		msg.Messenger = messenger.UUID()
 
 		msg.Body = m.Body
 		for _, a := range m.Attachments {

@@ -58,14 +58,14 @@ type Options struct {
 	MaxConns int           `json:"max_conns"`
 	Retries  int           `json:"retries"`
 	Timeout  time.Duration `json:"timeout"`
-	From    string        `json:"from"`
+	From     string        `json:"from"`
 }
 
 // Postback represents an HTTP Message server.
 type Postback struct {
-	authStr  string
-	o        Options
-	c        *http.Client
+	authStr string
+	o       Options
+	c       *http.Client
 }
 
 // New returns a new instance of the HTTP Postback messenger.
@@ -110,7 +110,6 @@ func (p *Postback) From() string {
 
 // Push pushes a message to the server.
 func (p *Postback) Push(m models.Message) error {
-
 	pb := postback{
 		FromEmail:   m.From,
 		Subject:     m.Subject,
