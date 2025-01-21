@@ -10,7 +10,7 @@ Visit [listmonk.app](https://listmonk.app) for more info.
 
 I tagged it to db schema version, and will follow that as semver.
 
-[![alt text](.github/images/shot1.png)]
+![alt text](.github/images/shot1.png)
 
 ### Event based campaigns
 
@@ -31,7 +31,7 @@ I tagged it to db schema version, and will follow that as semver.
 
 ### Settings
 
-- Tag 1 smtp as `default`, else random. It is used to send system alert emails.
+- Tag 1 smtp as `default`. It is used to send system alert emails.
 
 ### Query list by exact name
 
@@ -39,9 +39,8 @@ I tagged it to db schema version, and will follow that as semver.
 
 ### Per Campaign `Sliding window limit`
 
-- Config added to create/update campaign UI
 - Config is removed from `Settings`>`Performance`. On upgrade this is copied to all campaigns.
-- Allows setting limit per campaign per endpoint.
+- Allows setting limit per campaign.
 
 ### Cloning of lists
 
