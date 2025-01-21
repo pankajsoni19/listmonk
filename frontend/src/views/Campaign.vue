@@ -917,6 +917,7 @@ export default Vue.extend({
         sliding_window: this.form.slidingWindow,
         sliding_window_rate: this.form.slidingWindowRate || 1,
         sliding_window_duration: this.form.slidingWindowDuration || '1h',
+        messenger: JSON.stringify(this.selectedMessengers()),
       };
 
       const typMsg = 'globals.messages.updated';
