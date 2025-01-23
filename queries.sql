@@ -512,13 +512,13 @@ counts AS (
 camp AS (
     INSERT INTO campaigns (uuid, type, name, subject, body, altbody, content_type, send_at, headers, 
     tags, messenger, template_id, to_send, archive, archive_slug, archive_template_id, archive_meta,
-    sliding_window, sliding_window_rate, sliding_window_duration, run_type, traffic_type)
+    sliding_window, sliding_window_rate, sliding_window_duration, run_type, traffic_type, attribs)
         SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
             (SELECT id FROM tpl), 
             (SELECT to_send FROM counts),
             $14, $15,
             (CASE WHEN $16 = 0 THEN (SELECT id FROM tpl) ELSE $16 END), $17,
-            $19, $20, $21, $22, $23
+            $19, $20, $21, $22, $23, $24
         RETURNING id
 ),
 med AS (
@@ -544,7 +544,7 @@ SELECT  c.id, c.uuid, c.name, c.subject,
         c.template_id, c.archive, c.archive_slug, c.archive_template_id, c.archive_meta,
         c.created_at, c.updated_at, 
         c.sliding_window, c.sliding_window_rate, c.sliding_window_duration,
-        c.run_type, c.traffic_type,
+        c.run_type, c.traffic_type, c.attribs,
         COUNT(*) OVER () AS total,
         (
             SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(l)), '[]') FROM (
@@ -903,6 +903,7 @@ WITH camp AS (
         sliding_window_duration=$20,
         run_type=$21,
         traffic_type=$22,
+        attribs=$23,
         updated_at=NOW()
     WHERE id = $1 RETURNING id
 ),

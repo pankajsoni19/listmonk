@@ -130,6 +130,8 @@ CREATE TABLE campaigns (
     archive_template_id INTEGER REFERENCES templates(id) ON DELETE SET DEFAULT DEFAULT 1,
     archive_meta        JSONB NOT NULL DEFAULT '{}',
 
+    attribs         JSONB NOT NULL DEFAULT '{}',
+
     started_at       TIMESTAMP WITH TIME ZONE,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()

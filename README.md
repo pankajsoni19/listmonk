@@ -12,6 +12,10 @@ I tagged it to db schema version, and will follow that as semver.
 
 ![alt text](.github/images/shot1.png)
 
+### Campaign level attributs
+
+- usage -> `{{ .Campaign.Attribs.mykey }}`
+
 ### Event based campaigns
 
 - When creating campaign choose run type as `Event Subscription`
