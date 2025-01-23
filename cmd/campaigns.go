@@ -252,6 +252,10 @@ func handleUpdateCampaign(c echo.Context) error {
 	// Read the incoming params into the existing campaign fields from the DB.
 	// This allows updating of values that have been sent whereas fields
 	// that are not in the request retain the old values.
+
+	// overwrite db values to empty
+	cm.Attribs = make(models.JSON)
+
 	o := campaignReq{Campaign: cm}
 	if err := c.Bind(&o); err != nil {
 		return err
@@ -587,6 +591,10 @@ func validateCampaignFields(c campaignReq, app *App) (campaignReq, error) {
 
 	if len(c.Headers) == 0 {
 		c.Headers = make([]map[string]string, 0)
+	}
+
+	if len(c.Attribs) == 0 {
+		c.Attribs = make(models.JSON)
 	}
 
 	if len(c.ArchiveMeta) == 0 {

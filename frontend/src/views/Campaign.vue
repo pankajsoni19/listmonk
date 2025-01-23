@@ -335,6 +335,28 @@
                 </div>
                 <hr />
 
+                <div>
+                  <p class="has-text-right">
+                    <a href="#" @click.prevent="onShowAttribs" data-cy="btn-attribs">
+                      <b-icon icon="plus" />{{ $t('settings.smtp.setCustomAttribs') }}
+                    </a>
+                  </p>
+                  <b-field
+                    v-if="form.attribsStr !== '{}' || isAttribsVisible"
+                    label-position="on-border"
+                    :message="$t('campaigns.customAttribsHelp')"
+                  >
+                    <b-input
+                      v-model="form.attribsStr"
+                      name="attribs"
+                      type="textarea"
+                      placeholder='{"X-Custom": "value", "X-Custom2": "value"}'
+                      :disabled="!canEdit"
+                    />
+                  </b-field>
+                </div>
+                <hr />
+
                 <b-field v-if="isNew">
                   <b-button
                     native-type="submit"
@@ -602,6 +624,7 @@ export default Vue.extend({
       isNew: false,
       isEditing: false,
       isHeadersVisible: false,
+      isAttribsVisible: false,
       isAttachFieldVisible: false,
       isAttachModalOpen: false,
       activeTab: 'campaign',
@@ -625,7 +648,9 @@ export default Vue.extend({
         name: '',
         subject: '',
         headersStr: '[]',
+        attribsStr: '{}',
         headers: [],
+        attribs: {},
         templateId: 0,
         lists: [],
         tags: [],
@@ -661,6 +686,10 @@ export default Vue.extend({
 
     onShowHeaders() {
       this.isHeadersVisible = !this.isHeadersVisible;
+    },
+
+    onShowAttribs() {
+      this.isAttribsVisible = !this.isAttribsVisible;
     },
 
     onShowAttachField() {
@@ -755,6 +784,18 @@ export default Vue.extend({
         this.form.headers = [];
       }
 
+      // Validate custom Attribs headers
+      if (this.form.attribsStr && this.form.attribsStr !== '{}') {
+        try {
+          this.form.attribs = JSON.parse(this.form.attribsStr);
+        } catch (e) {
+          this.$utils.toast(e.toString(), 'is-danger');
+          return;
+        }
+      } else {
+        this.form.attribs = {};
+      }
+
       // Validate archive JSON body.
       if (this.form.archive && this.form.archiveMetaStr) {
         try {
@@ -805,6 +846,7 @@ export default Vue.extend({
           ...this.form,
           ...data,
           headersStr: JSON.stringify(data.headers, null, 4),
+          attribsStr: JSON.stringify(data.attribs, null, 4) || '{}',
           archiveMetaStr: data.archiveMeta ? JSON.stringify(data.archiveMeta, null, 4) : '{}',
 
           // The structure that is populated by editor input event.
@@ -836,6 +878,7 @@ export default Vue.extend({
         messenger: JSON.stringify(this.selectedMessengers()),
         type: 'regular',
         headers: this.form.headers,
+        attribs: this.form.attribs,
         tags: this.form.tags,
         template_id: this.form.templateId,
         content_type: this.form.content.contentType,
@@ -864,6 +907,7 @@ export default Vue.extend({
         tags: this.form.tags,
         send_at: this.form.sendLater ? this.form.sendAtDate : null,
         headers: this.form.headers,
+        attribs: this.form.attribs,
         template_id: this.form.templateId,
         media: this.form.media.map((m) => m.id),
         sliding_window: this.form.slidingWindow,
@@ -891,6 +935,7 @@ export default Vue.extend({
         tags: this.form.tags,
         send_at: this.form.sendLater ? this.form.sendAtDate : null,
         headers: this.form.headers,
+        attribs: this.form.attribs,
         template_id: this.form.templateId,
         content_type: this.form.content.contentType,
         body: this.form.content.body,

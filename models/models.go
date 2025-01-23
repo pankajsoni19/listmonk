@@ -316,7 +316,7 @@ type CampaignMessenger struct {
 	UUID   string `json:"uuid"`
 	Name   string `json:"name"`
 	Weight int    `json:"weight"`
-	WFrom string `json:"wfrom"`
+	WFrom  string `json:"wfrom"`
 }
 
 // Campaign represents an e-mail campaign.
@@ -349,6 +349,8 @@ type Campaign struct {
 	SlidingWindow         bool   `db:"sliding_window" json:"sliding_window"`
 	SlidingWindowRate     int    `db:"sliding_window_rate" json:"sliding_window_rate"`
 	SlidingWindowDuration string `db:"sliding_window_duration" json:"sliding_window_duration"`
+
+	Attribs JSON `db:"attribs" json:"attribs"`
 
 	Tpl        *template.Template `json:"-"`
 	SubjectTpl *txttpl.Template   `json:"-"`
@@ -454,7 +456,7 @@ type Bounce struct {
 
 // Message is the message pushed to a Messenger.
 type Message struct {
-	From 		string
+	From        string
 	To          []string
 	Subject     string
 	ContentType string
@@ -493,7 +495,7 @@ type TxMessage struct {
 	Data        map[string]interface{} `json:"data"`
 	Headers     Headers                `json:"headers"`
 	ContentType string                 `json:"content_type"`
-	From string `json:"from"`
+	From        string                 `json:"from"`
 	Messenger   string                 `json:"messenger"`
 
 	// File attachments added from multi-part form data.
